@@ -95,6 +95,18 @@ async def judge(ctx, player1: discord.Member, player2: discord.Member, result: s
     save_data()
     await ctx.send(f"Judge override applied: {player1.display_name} vs {player2.display_name} — {result}")
 
+# ---------- Solo Test Command ----------
+@bot.command(name="testmatch")
+async def testmatch(ctx, player: str, points: int):
+    """
+    Adds points to any player for solo testing purposes.
+    """
+    # Make sure the player exists in leaderboard
+    leaderboard.setdefault(player, {"wins":0, "losses":0, "draws":0, "points":0})
+    leaderboard[player]["points"] += points
+    await ctx.send(f"✅ {player} now has {leaderboard[player]['points']} points!")
+    save_data()
+
 # ---------- Leaderboard ----------
 @bot.command(name="leaderboard")
 async def leaderboard_cmd(ctx):
