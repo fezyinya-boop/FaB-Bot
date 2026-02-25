@@ -48,37 +48,34 @@ async def report(ctx, opponent: discord.Member, result: str):
     # Check if both players reported
     reports = pending[match_key]
     if len(reports) == 2:
-        values = list(reports.values())
-        if values[0] == values[1]:
-            # Both agree -> record match
-            await ctx.send(f"Both players agree! Recording match: {ctx.author.display_name} vs {opponent.display_name} — {result}")
-            record_match(reporter, opponent_id, result)
-            del pending[match_key]
-            save_data()
+        reporter_result = reports[reporter]
+        opponent_result = reports[opponent_id]
+
+        # Impossible scenario: both claim win
+        if reporter_result == "win" and opponent_result == "win":
+            await ctx.send(f"Invalid reports: both players reported 'win'. Judge needed: {ctx.author.display_name} vs {opponent.display_name}")
+        # Impossible scenario: both claim loss
+        elif reporter_result == "loss" and opponent_result == "loss":
+            await ctx.send(f"Invalid reports: both players reported 'loss'. Judge needed: {ctx.author.display_name} vs {opponent.display_name}")
+        # Both agree on draw
+        elif reporter_result == "draw" and opponent_result == "draw":
+            await ctx.send(f"Both players agree on a draw! Recording match: {ctx.author.display_name} vs {opponent.display_name}")
+            record_match(reporter, opponent_id, "draw")
+        # Standard case: one win, one loss
+        elif (reporter_result == "win" and opponent_result == "loss") or (reporter_result == "loss" and opponent_result == "win"):
+            winner_id = reporter if reporter_result == "win" else opponent_id
+            loser_id = opponent_id if winner_id == reporter else reporter
+            await ctx.send(f"Match recorded: {ctx.author.display_name} vs {opponent.display_name} — Winner: {bot.get_user(int(winner_id)).name}")
+            record_match(winner_id, loser_id, "win")
+        # Any other unexpected combination
         else:
-            # Conflict -> flag for judge
             await ctx.send(f"Conflict detected! Staff please review match: {ctx.author.display_name} vs {opponent.display_name}")
+
+        # Clear pending after processing
+        del pending[match_key]
+        save_data()
     else:
         await ctx.send(f"Report received! Waiting for opponent to submit result.")
-
-def record_match(player1, player2, result):
-    leaderboard.setdefault(player1, {"wins":0, "losses":0, "draws":0, "points":0})
-    leaderboard.setdefault(player2, {"wins":0, "losses":0, "draws":0, "points":0})
-
-    if result == "win":
-        leaderboard[player1]["wins"] += 1
-        leaderboard[player1]["points"] += 3
-        leaderboard[player2]["losses"] += 1
-    elif result == "loss":
-        leaderboard[player1]["losses"] += 1
-        leaderboard[player2]["wins"] += 1
-        leaderboard[player2]["points"] += 3
-    elif result == "draw":
-        leaderboard[player1]["draws"] += 1
-        leaderboard[player1]["points"] += 1
-        leaderboard[player2]["draws"] += 1
-        leaderboard[player2]["points"] += 1
-    save_data()
 
 # ---------- Judge Override ----------
 @bot.command(name="judge")
