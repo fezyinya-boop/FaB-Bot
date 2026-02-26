@@ -3,6 +3,62 @@ from discord.ext import commands
 import json
 import os
 
+from flask import Flask, render_template_string
+from threading import Thread
+
+app = Flask('')
+
+@app.route('/')
+def home():
+    # Sort players by points (Elo) for the web view
+    sorted_players = sorted(leaderboard.items(), key=lambda x: x[1]['points'], reverse=True)
+    
+    table_rows = ""
+    for i, (uid, stats) in enumerate(sorted_players, 1):
+        # Determine a "Tier" color for the web row
+        color = "#ffd700" if i == 1 else "#c0c0c0" if i == 2 else "#cd7f32" if i == 3 else "#ffffff"
+        table_rows += f"""
+        <tr style="color: {color}">
+            <td>{i}</td>
+            <td>{stats.get('name', 'Unknown')}</td>
+            <td>{stats['points']}</td>
+            <td>{stats['wins']}W - {stats['losses']}L</td>
+        </tr>
+        """
+
+    return render_template_string(f'''
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>GA Leaderboard</title>
+        <style>
+            body {{ background-color: #121212; color: white; font-family: sans-serif; text-align: center; }}
+            table {{ margin: 50px auto; border-collapse: collapse; width: 80%; background: #1e1e1e; border-radius: 10px; overflow: hidden; }}
+            th, td {{ padding: 15px; border-bottom: 1px solid #333; }}
+            th {{ background-color: #333; text-transform: uppercase; letter-spacing: 1px; }}
+            h1 {{ color: #00d4ff; margin-top: 30px; }}
+        </style>
+    </head>
+    <body>
+        <h1>🏆 Archive Arena Leaderboard 🏆 </h1>
+        <table>
+            <tr><th>Rank</th><th>Player</th><th>Rating</th><th>Record</th></tr>
+            {table_rows}
+        </table>
+        <p>Updates live after every match!</p>
+    </body>
+    </html>
+    ''')
+
+def run_web():
+    # Port 8080 is what Replit looks for to trigger the Webview
+    app.run(host='0.0.0.0', port=8080)
+
+def keep_alive():
+    t = Thread(target=run_web)
+    t.start()
+
+
 PREFIX = "!"
 LEADERBOARD_FILE = "leaderboard.json"
 PENDING_FILE = "pending.json"
@@ -194,5 +250,8 @@ async def rank(ctx, member: discord.Member = None):
 
 
 # ---------- Run ----------
+if __name__ == "__main__":
+    keep_alive()   # This starts the website in the background
+
 TOKEN = os.environ["DISCORD_TOKEN"]
 bot.run(TOKEN)
