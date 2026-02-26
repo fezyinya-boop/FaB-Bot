@@ -155,23 +155,41 @@ async def leaderboard_cmd(ctx):
     await ctx.send(embed=embed)
 
 #rank#
+
 @bot.command(name="rank")
 async def rank(ctx, member: discord.Member = None):
     member = member or ctx.author
     user_id = str(member.id)
     
     if user_id not in leaderboard:
-        return await ctx.send(f"🔍 {member.display_name} hasn't played any matches yet!")
+        return await ctx.send(f"🔍 **{member.display_name}** hasn't recorded any matches in the Arena yet!")
 
     stats = leaderboard[user_id]
     
-    embed = discord.Embed(title=f"⚔️ Player Profile: {stats['name']}", color=0x7289da)
-    embed.set_thumbnail(url=member.display_url) # Shows their actual Discord profile pic
+    # Safety Math for Win Rate
+    total_games = stats['wins'] + stats['losses']
+    win_percentage = round((stats['wins'] / total_games) * 100) if total_games > 0 else 0
     
-    embed.add_field(name="Current Rating", value=f"🛡️ `{stats['points']} Elo`", inline=True)
-    embed.add_field(name="Win Rate", value=f"📈 `{round((stats['wins']/(stats['wins']+stats['losses']))*100)}%`", inline=True)
-    embed.add_field(name="Record", value=f"✅ {stats['wins']} Wins\n❌ {stats['losses']} Losses\n🤝 {stats['draws']} Draws", inline=False)
+    # Tier Logic (Optional Spiffiness)
+    tier = "Bronze"
+    if stats['points'] >= 1500: tier = "Grandmaster 🏆"
+    elif stats['points'] >= 1200: tier = "Gold 🥇"
+    elif stats['points'] >= 1100: tier = "Silver 🥈"
+
+    embed = discord.Embed(
+        title=f"⚔️ Arena Profile: {stats.get('name', 'Unknown')}", 
+        description=f"**Rank Tier:** {tier}",
+        color=0x7289da
+    )
     
+    # Use display_avatar.url for 2026 compatibility
+    embed.set_thumbnail(url=member.display_avatar.url)
+    
+    embed.add_field(name="Rating", value=f"🛡️ `{stats['points']} Elo`", inline=True)
+    embed.add_field(name="Win Rate", value=f"📈 `{win_percentage}%`", inline=True)
+    embed.add_field(name="Match Record", value=f"✅ {stats['wins']} | ❌ {stats['losses']} | 🤝 {stats['draws']}", inline=False)
+    
+    embed.set_footer(text=f"Player ID: {user_id}")
     await ctx.send(embed=embed)
 
 
