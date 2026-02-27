@@ -124,6 +124,14 @@ class ReportView(discord.ui.View):
         leaderboard[l_id]['streak'] = 0 
         save_data()
 
+                # 1. Update the player's Discord roles based on their new RP
+        await update_player_role(self.winner, leaderboard[w_id]['points'])
+        await update_player_role(self.loser, leaderboard[l_id]['points'])
+        
+        # 2. Update the live leaderboard pinned message
+        await update_live_leaderboard(self.winner.guild)
+
+
         # Check for Rank Up
         new_rank = get_rank_info(leaderboard[w_id]['points'])
         rank_up_msg = f"\n🆙 **RANK UP:** {self.winner.mention} ascended to **{new_rank['name']}**!" if new_rank['name'] != old_rank['name'] else ""
