@@ -50,6 +50,85 @@ def home():
     </html>
     ''')
 
+    @app.route('/player/<user_id>')
+def player_profile(user_id):
+    # 1. Check if the player exists in your data
+    if user_id not in leaderboard:
+        return f"<h1>404: Player Not Found</h1><p>ID {user_id} hasn't played any matches yet.</p><a href='/'>Return to Leaderboard</a>", 404
+    
+    stats = leaderboard[user_id]
+    
+    # 2. Calculate Win Rate safely
+    total = stats['wins'] + stats['losses']
+    wr = round((stats['wins'] / total) * 100) if total > 0 else 0
+
+    # 3. The "Glow-up" Profile HTML
+    return render_template_string('''
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <title>{{ name }} | Player Profile</title>
+            <style>
+                :root { --accent: #00d4ff; --bg: #0b0e14; }
+                body { background: var(--bg); color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+                       display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+                .profile-card { background: rgba(255,255,255,0.05); padding: 40px; border-radius: 24px; 
+                                border: 1px solid rgba(0, 212, 255, 0.3); width: 90%; max-width: 400px; 
+                                text-align: center; backdrop-filter: blur(10px); box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+                h1 { margin: 10px 0; font-size: 2rem; letter-spacing: 1px; }
+                .rank-title { color: var(--accent); text-transform: uppercase; font-size: 0.8rem; letter-spacing: 3px; margin-bottom: 30px; }
+                .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+                .stat-item { background: rgba(0,0,0,0.3); padding: 20px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.05); }
+                .stat-label { font-size: 0.7rem; color: #888; text-transform: uppercase; margin-bottom: 5px; }
+                .stat-value { font-size: 1.4rem; font-weight: bold; color: #fff; }
+                .back-link { display: inline-block; margin-top: 30px; color: #555; text-decoration: none; font-size: 0.9rem; transition: 0.3s; }
+                .back-link:hover { color: var(--accent); }
+            </style>
+        </head>
+        <body>
+            <div class="profile-card">
+                <div style="font-size: 50px;">🛡️</div>
+                <h1>{{ name }}</h1>
+                <div class="rank-title">Arena Participant</div>
+                
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-label">Rating</div>
+                        <div class="stat-value" style="color: var(--accent);">{{ points }}</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Win Rate</div>
+                        <div class="stat-value">{{ wr }}%</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Wins</div>
+                        <div class="stat-value" style="color: #4caf50;">{{ wins }}</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Losses</div>
+                        <div class="stat-value" style="color: #f44336;">{{ losses }}</div>
+                    </div>
+                </div>
+                
+                <a href="/" class="back-link">← Return to Leaderboard</a>
+            </div>
+        </body>
+        </html>
+    ''', name=stats.get('name', 'Unknown'), points=stats['points'], wins=stats['wins'], losses=stats['losses'], wr=wr)
+
+
+# Inside your home() function's loop:
+table_rows += f"""
+    <tr>
+        <td>{i}</td>
+        <td><a href="/player/{uid}" style="color: #00d4ff; text-decoration: none; font-weight: bold;">{stats.get('name', 'Unknown')}</a></td>
+        <td>{stats['points']}</td>
+        <td>{stats['wins']}W - {stats['losses']}L</td>
+    </tr>
+"""
+
+
 def run_web():
     # Port 8080 is what Replit looks for to trigger the Webview
     app.run(host='0.0.0.0', port=5000)
