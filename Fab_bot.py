@@ -93,6 +93,20 @@ async def rank(ctx, member: discord.Member = None):
     embed.set_footer(text="Ascent LA 2026")
     
     await ctx.send(embed=embed)
+
+@bot.command()
+@commands.has_permissions(administrator=True)
+async def force_sync(ctx):
+    """Forces Replit to write the leaderboard to the actual disk."""
+    try:
+        with open('leaderboard.json', 'w') as f:
+            json.dump(leaderboard, f, indent=4)
+            f.flush()
+            os.fsync(f.fileno()) # The 'Hard Commit'
+        await ctx.send("💎 **The Archive has been hard-synced to disk.**")
+    except Exception as e:
+        await ctx.send(f"❌ **Sync Failed:** {e}")
+
     
 TOKEN = os.environ["DISCORD_TOKEN"]
 bot.run(TOKEN)
