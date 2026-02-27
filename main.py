@@ -3,6 +3,13 @@ from discord.ext import commands
 import json
 import os
 
+# This pulls from your Replit Secrets
+LEADERBOARD_CHANNEL_ID = int(os.environ['LEADERBOARD_CHANNEL_ID'])
+
+# This you hard-code manually after you get the ID from Discord
+LEADERBOARD_MSG_ID = 1476843531191717972  # Replace this with your actual Message ID
+
+
 # --- Data Management ---
 def load_data():
     if os.path.exists('leaderboard.json'):
