@@ -217,7 +217,7 @@ async def rank(ctx, member: discord.Member = None):
                     embed = discord.Embed(title=member.display_name, color=rank_info["color"])
     
     # ROW 1: Rank and Points
-    embed.add_field(name="🛡️ TIER", value=f"{rank_info['id']} {rank_info['name']}", inline=True)
+    
     embed.add_field(name="🏆 RATING", value=f"{pts} RP", inline=True)
     
     # ROW 2: Record and Streak
