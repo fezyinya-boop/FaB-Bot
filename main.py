@@ -183,8 +183,21 @@ async def rank(ctx, member: discord.Member = None):
     member = member or ctx.author
     uid = str(member.id)
     
+    # Check if they exist, if not, give them "Starter" stats instead of an error
     if uid not in leaderboard:
-        return await ctx.send("❌ No data found.")
+        user_data = {
+            "name": member.display_name,
+            "points": 1000,
+            "wins": 0,
+            "losses": 0,
+            "streak": 0
+        }
+    else:
+        user_data = leaderboard[uid]
+
+    pts = user_data['points']
+    # Rest of your rank code stays the same...
+
 
     data = leaderboard[uid]
     pts = data['points']
