@@ -214,53 +214,25 @@ async def rank(ctx, member: discord.Member = None):
     else:
         progress_str = "\n`▰▰▰▰▰▰▰▰▰▰` **MAX RANK**"
     
-                # 1. Embed Header (Player Name only)
-    embed = discord.Embed(title=member.display_name, color=rank_info["color"])
+                    embed = discord.Embed(title=member.display_name, color=rank_info["color"])
     
-    # 2. ROW 1: Identity & Power (Side-by-Side)
-    embed.add_field(
-        name="🛡️ TIER", 
-        value=f"{rank_info['id']} **{rank_info['name']}**", 
-        inline=True
-    )
-    embed.add_field(
-        name="🏆 RATING", 
-        value=f"**{pts}** RP", 
-        inline=True
-    )
+    # ROW 1: Rank and Points
+    embed.add_field(name="🛡️ TIER", value=f"{rank_info['id']} {rank_info['name']}", inline=True)
+    embed.add_field(name="🏆 RATING", value=f"{pts} RP", inline=True)
     
-    # 3. ROW 2: Performance (Side-by-Side)
+    # ROW 2: Record and Streak
     win_rate = round((user_data['wins'] / (user_data['wins'] + user_data['losses'])) * 100) if (user_data['wins'] + user_data['losses']) > 0 else 0
+    embed.add_field(name="⚔️ RECORD", value=f"{user_data['wins']}W - {user_data['losses']}L\n`{win_rate}% WR`", inline=True)
+    embed.add_field(name="🔥 STREAK", value=f"{user_data.get('streak', 0)} Wins", inline=True)
     
-    embed.add_field(
-        name="⚔️ RECORD", 
-        value=f"**{user_data['wins']}W - {user_data['losses']}L**\n`{win_rate}% WR`", 
-        inline=True
-    )
-    embed.add_field(
-        name="🔥 STREAK", 
-        value=f"**{user_data.get('streak', 0)}** Wins", 
-        inline=True
-    )
-    
-    # 4. ROW 3: The Progress Bar (Full Width)
-    if next_rank:
-        # Spacing with \n to separate from the stats above
-        progress_display = f"\n{bar}  {int((current_progress/total_needed)*100)}% to **{next_rank['name']}**"
-    else:
-        progress_display = f"\n`▰▰▰▰▰▰▰▰▰▰` **MAX RANK**"
+    # ROW 3: Progress Bar (Set to inline=False so it stretches across the bottom)
+    embed.add_field(name="🚀 RANK PROGRESS", value=f"\n{bar} {int((current_progress/total_needed)*100)}% to {next_rank['name']}", inline=False)
 
-    embed.add_field(
-        name="🚀 RANK PROGRESS", 
-        value=progress_display, 
-        inline=False
-    )
-
-    # 5. Visuals & Branding
     embed.set_thumbnail(url=member.display_avatar.url)
-    embed.set_footer(text="Archive Arena | Ascent LA 2026", icon_url=ctx.guild.icon.url if ctx.guild.icon else None)
+    embed.set_footer(text="Arena Keeper")
 
     await ctx.send(embed=embed)
+
 
 
 
