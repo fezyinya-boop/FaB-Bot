@@ -8,6 +8,7 @@ import asyncio
 TOKEN = os.environ["DISCORD_TOKEN"]
 LEADERBOARD_CHANNEL_ID = int(os.environ['LEADERBOARD_CHANNEL_ID'])
 LEADERBOARD_MSG_ID = 1476843531191717972 
+MOD_ROLE_ID = 1477213439586996285  # <--- REPLACE THIS WITH YOUR ACTUAL MOD ROLE ID
 DB_NAME = "arena_tracker.db"
 
 # --- Rank Config ---
@@ -16,7 +17,7 @@ RANKS = [
     {"name": "📀 PLATINUM", "min": 1600, "color": 0xe5e4e2},
     {"name": "🟡 GOLD", "min": 1400, "color": 0xffd700},
     {"name": "<:rookie:1476994147935322265> SILVER", "min": 1200, "color": 0xc0c0c0},
-    {"name": "🟤 BRONZE", "min": 0, "color": 0xcd7f32}
+    {"name": "🟟 BRONZE", "min": 0, "color": 0xcd7f32}
 ]
 
 # --- Database Setup ---
@@ -76,7 +77,7 @@ async def refresh_leaderboard(guild):
     top = c.fetchall()
     conn.close()
 
-    embed = discord.Embed(title="🏆 ARCHIVE ARENA - TOP 10 🏆", color=0xd4af37)
+    embed = discord.Embed(title="🏆 ARCHIVE ARENA TOP 10", color=0xd4af37)
     desc = ""
     for i, (name, pts, streak) in enumerate(top, 1):
         fire = f"🔥{streak}" if streak >= 3 else ""
@@ -94,11 +95,9 @@ async def refresh_leaderboard(guild):
 
 class MatchReportingView(discord.ui.View):
     def __init__(self, p1, p2):
-        super().__init__(timeout=1800) # 30 Minute Forfeit Timer
+        super().__init__(timeout=1800)
         self.p1, self.p2 = p1, p2
         self.reports = {p1.id: None, p2.id: None}
-        
-        # Update button labels to use Display Names
         self.report_p1.label = f"{p1.display_name} Won"
         self.report_p2.label = f"{p2.display_name} Won"
 
@@ -114,7 +113,9 @@ class MatchReportingView(discord.ui.View):
 
         w_hist = w_data[6].split(",") if w_data[6] else []
         l_hist = l_data[6].split(",") if l_data[6] else []
-        w_hist.append("W"); l_hist.append("L")
+        
+        w_hist.append(f"W:{l_mem.display_name}:{pts}")
+        l_hist.append(f"L:{w_mem.display_name}:{pts}")
 
         update_user_stats(w_mem.id, r1 + pts, w_data[3]+1, w_data[4], w_data[5]+1, w_hist)
         update_user_stats(l_mem.id, r2 - pts, l_data[3], l_data[4]+1, 0, l_hist)
@@ -123,15 +124,12 @@ class MatchReportingView(discord.ui.View):
         await update_player_role(l_mem, r2 - pts)
         await refresh_leaderboard(interaction.guild)
 
-        # UI RESTORATION: The "Pro" Embed Style
         rank_info = get_rank_info(r1 + pts)
         embed = discord.Embed(title="⚔️ MATCH VERIFIED", color=rank_info["color"])
-        
         streak_msg = f"\n🔥 **On a {w_data[5]+1} win streak!**" if w_data[5]+1 >= 3 else ""
         
         embed.description = f"**{w_mem.display_name}** defeated **{l_mem.display_name}**"
         embed.add_field(name="RESULTS", value=f"📈 **{w_mem.display_name}**: `+{pts} RP`\n📉 **{l_mem.display_name}**: `-{pts} RP`{streak_msg}", inline=False)
-        
         embed.set_footer(text="Arena Tracker • Match Finalized")
         await interaction.response.edit_message(content=None, embed=embed, view=None)
 
@@ -151,7 +149,14 @@ class MatchReportingView(discord.ui.View):
         p1_rep, p2_rep = self.reports[self.p1.id], self.reports[self.p2.id]
         if p1_rep and p2_rep:
             if p1_rep != p2_rep:
-                await interaction.response.edit_message(content=f"⚠️ **DISPUTE!** {self.p1.display_name} and {self.p2.display_name} reported different winners. Pinging @Moderator.", view=None)
+                # FIXED: Pings moderators properly using Role ID
+                embed = discord.Embed(
+                    title="⚠️ MATCH DISPUTE",
+                    description=f"**{self.p1.display_name}** and **{self.p2.display_name}** reported different winners.\n\nAutomated tracking is paused. A <@&{MOD_ROLE_ID}> must resolve this manually.",
+                    color=0xe74c3c
+                )
+                embed.set_footer(text="Arena Tracker • Dispute Phase")
+                await interaction.response.edit_message(content=f"<@&{MOD_ROLE_ID}>", embed=embed, view=None)
             else:
                 await self.finalize(interaction, p1_rep)
         else:
@@ -165,7 +170,6 @@ class ChallengeView(discord.ui.View):
     @discord.ui.button(label="Accept Match", style=discord.ButtonStyle.success)
     async def accept(self, interaction: discord.Interaction, button: discord.ui.Button):
         if interaction.user.id != self.p2.id: return
-        
         embed = discord.Embed(
             title="⚔️ MATCH ACTIVE",
             description=f"Match started between **{self.p1.display_name}** and **{self.p2.display_name}**.\n\nOnce finished, **both** players must report the winner below.",
@@ -186,7 +190,6 @@ async def on_ready():
 async def report(ctx, opponent: discord.Member):
     if opponent == ctx.author: return
     view = ChallengeView(ctx.author, opponent)
-    
     embed = discord.Embed(
         title="📝 CHALLENGE ISSUED",
         description=f"{opponent.mention}, **{ctx.author.display_name}** has challenged you to a match!\n\nDo you accept?",
@@ -228,12 +231,20 @@ async def rank(ctx, member: discord.Member = None):
 async def history(ctx, member: discord.Member = None):
     member = member or ctx.author
     data = get_or_create_user(member.id, member.display_name)
-    hist = data[6].split(",") if data[6] else []
-    if not hist: return await ctx.send(f"No match history for {member.display_name}.")
+    raw_hist = data[6].split(",") if data[6] else []
+    if not raw_hist: return await ctx.send(f"No match history for {member.display_name}.")
     
-    display = "\n".join([f"`{i+1}.` {'🟩 WIN' if r == 'W' else '🟥 LOSS'}" for i, r in enumerate(reversed(hist))])
+    display = ""
+    for entry in reversed(raw_hist):
+        try:
+            res, opp, rp = entry.split(":")
+            circle = "🟢" if res == "W" else "🔴"
+            display += f"{circle} **{res}** vs {opp} (`{rp} RP`)\n"
+        except ValueError:
+            display += f"• {entry}\n"
+
     embed = discord.Embed(title=f"📜 {member.display_name}'s History", description=display, color=0x3498db)
-    embed.set_footer(text="Arena Tracker")
+    embed.set_footer(text="Arena Tracker • Last 10 Matches")
     await ctx.send(embed=embed)
 
 @bot.command()
@@ -246,7 +257,8 @@ async def settle(ctx, winner: discord.Member, loser: discord.Member):
     
     w_hist = w_data[6].split(",") if w_data[6] else []
     l_hist = l_data[6].split(",") if l_data[6] else []
-    w_hist.append("W"); l_hist.append("L")
+    w_hist.append(f"W:{loser.display_name}:{pts}")
+    l_hist.append(f"L:{winner.display_name}:{pts}")
 
     update_user_stats(winner.id, r1+pts, w_data[3]+1, w_data[4], w_data[5]+1, w_hist)
     update_user_stats(loser.id, r2-pts, l_data[3], l_data[4]+1, 0, l_hist)
@@ -258,6 +270,7 @@ async def settle(ctx, winner: discord.Member, loser: discord.Member):
     embed = discord.Embed(title="⚖️ JUDGE VERDICT", color=0xe74c3c)
     embed.description = f"**{winner.display_name}** awarded victory over **{loser.display_name}**."
     embed.add_field(name="RP SHIFT", value=f"📈 {winner.display_name}: `+{pts}`\n📉 {loser.display_name}: `-{pts}`")
+    embed.set_footer(text="Arena Tracker • Dispute Resolved")
     await ctx.send(embed=embed)
 
 bot.run(TOKEN)
