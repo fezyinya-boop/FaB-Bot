@@ -64,12 +64,23 @@ def get_rank_info(points):
 
 async def update_player_role(member, points):
     rank_info = get_rank_info(points)
-    role = discord.utils.get(member.guild.roles, name=rank_info['name'])
+    
+    # This splits the name by spaces and takes the last part
+    # e.g., "<:novice:ID> SILVER" becomes "SILVER"
+    clean_role_name = rank_info['name'].split()[-1]
+    
+    role = discord.utils.get(member.guild.roles, name=clean_role_name)
+    
     if role and role not in member.roles:
-        all_names = [r['name'] for r in RANKS]
-        to_remove = [r for r in member.roles if r.name in all_names]
+        # Create a list of all possible rank names (the plain text parts) to remove
+        all_rank_names = [r['name'].split()[-1] for r in RANKS]
+        
+        # Identify which roles the user has that are arena ranks
+        to_remove = [r for r in member.roles if r.name in all_rank_names]
+        
         await member.remove_roles(*to_remove)
         await member.add_roles(role)
+        
 
 async def refresh_leaderboard(guild):
     channel = guild.get_channel(LEADERBOARD_CHANNEL_ID)
