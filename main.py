@@ -16,12 +16,13 @@ DB_NAME = "arena_tracker.db"
 
 # --- Rank Config ---
 RANKS = [
-    {"name": "💎 DIAMOND", "min": 1800, "color": 0x00ffff},
-    {"name": "📀 PLATINUM", "min": 1600, "color": 0xe5e4e2},
-    {"name": "🟡 GOLD", "min": 1400, "color": 0xffd700},
-    {"name": "😭 SILVER", "min": 1200, "color": 0xc0c0c0},
+    {"name": "<:Diamond:1477427100666433572> DIAMOND", "min": 1800, "color": 0x00ffff},
+    {"name": "<:Silver:1477427675067842588> PLATINUM", "min": 1600, "color": 0xe5e4e2},
+    {"name": "<:Gold:1477426026945577000> GOLD", "min": 1400, "color": 0xffd700},
+    {"name": "<:novice:1477421174249099416> SILVER", "min": 1200, "color": 0xc0c0c0},
     {"name": "<:rookie:1476994147935322265> BRONZE", "min": 0, "color": 0xcd7f32}
 ]
+
 
 # --- Database Setup ---
 def init_db():
