@@ -3,6 +3,8 @@ from discord.ext import commands
 import sqlite3
 import os
 import asyncio
+import math
+import random 
 
 # --- Config & Secrets ---
 TOKEN = os.environ["DISCORD_TOKEN"]
@@ -278,5 +280,114 @@ async def settle(ctx, winner: discord.Member, loser: discord.Member):
     # FOOTER UPDATED: Removed Arena Tracker
     embed.set_footer(text="Dispute Resolved")
     await ctx.send(embed=embed)
+
+# --- Tournament Globals ---
+tournament_players = []  # List of member objects
+tournament_active = False
+tournament_bracket = []  # List of match dictionaries
+
+@bot.command()
+@commands.has_permissions(manage_messages=True)
+async def tourney_open(ctx):
+    global tournament_players, tournament_active
+    tournament_players = []
+    tournament_active = True
+    
+    embed = discord.Embed(
+        title="🛡️ TOURNAMENT REGISTRATION OPEN",
+        description="Click the button below to enter the Archive Arena Tournament!\n\n**Participants:** 0",
+        color=0x2ecc71
+    )
+    
+    view = discord.ui.View(timeout=None)
+    button = discord.ui.Button(label="Join Tournament", style=discord.ButtonStyle.primary, emoji="⚔️")
+
+    async def join_callback(interaction):
+        if interaction.user in tournament_players:
+            return await interaction.response.send_message("You're already in!", ephemeral=True)
+        
+        tournament_players.append(interaction.user)
+        embed.description = f"Click the button below to enter the Archive Arena Tournament!\n\n**Participants:** {len(tournament_players)}\n" + \
+                            ", ".join([p.display_name for p in tournament_players])
+        await interaction.message.edit(embed=embed)
+        await interaction.response.send_message("Registered!", ephemeral=True)
+
+    button.callback = join_callback
+    view.add_item(button)
+    await ctx.send(embed=embed, view=view)
+
+@bot.command()
+@commands.has_permissions(manage_messages=True)
+async def tourney_start(ctx):
+    global tournament_bracket, tournament_players
+    if len(tournament_players) < 2:
+        return await ctx.send("Not enough players to start!")
+
+    # 1. Seed by RP (High vs Low)
+    player_data = []
+    for p in tournament_players:
+        data = get_or_create_user(p.id, p.display_name)
+        player_data.append((p, data[2])) # (Member, RP)
+    
+    player_data.sort(key=lambda x: x[1], reverse=True)
+    sorted_players = [p[0] for p in player_data]
+
+    # 2. Build Initial Bracket (Standard Seeding)
+    bracket_size = 1 << (len(sorted_players) - 1).bit_length() # Next power of 2
+    tournament_bracket = []
+    
+    # Fill with "Byes" if not power of 2
+    while len(sorted_players) < bracket_size:
+        sorted_players.append(None)
+
+    # Pair them: 1st vs Last, 2nd vs 2nd Last
+    for i in range(bracket_size // 2):
+        p1 = sorted_players[i]
+        p2 = sorted_players[-(i+1)]
+        tournament_bracket.append({"p1": p1, "p2": p2, "winner": None})
+
+    # 3. Display Bracket
+    embed = discord.Embed(title="🏟️ TOURNAMENT BRACKET GENERATED", color=0x3498db)
+    match_str = ""
+    for i, m in enumerate(tournament_bracket, 1):
+        name1 = m['p1'].display_name if m['p1'] else "BYE"
+        name2 = m['p2'].display_name if m['p2'] else "BYE"
+        match_str += f"**Match {i}:** {name1} vs {name2}\n"
+        
+        # Auto-advance Byes
+        if m['p2'] is None: m['winner'] = m['p1']
+        if m['p1'] is None: m['winner'] = m['p2']
+
+    embed.description = match_str
+    pings = " ".join([p.mention for p in tournament_players if p])
+    await ctx.send(content=pings, embed=embed)
+
+@bot.command()
+@commands.has_permissions(manage_messages=True)
+async def tourney_reward(ctx, first: discord.Member, second: discord.Member, third: discord.Member):
+    # Fixed Lump Sum Rewards
+    rewards = {first: 150, second: 75, third: 30}
+    
+    summary = ""
+    for member, amt in rewards.items():
+        data = get_or_create_user(member.id, member.display_name)
+        new_pts = data[2] + amt
+        
+        # Manual DB Update for rewards
+        conn = sqlite3.connect(DB_NAME)
+        c = conn.cursor()
+        c.execute("UPDATE users SET points=? WHERE user_id=?", (new_pts, str(member.id)))
+        conn.commit()
+        conn.close()
+        
+        summary += f"🥇" if amt == 150 else "🥈" if amt == 75 else "🥉"
+        summary += f" **{member.display_name}**: +{amt} RP (Total: `{new_pts}`)\n"
+        await update_player_role(member, new_pts)
+
+    embed = discord.Embed(title="🎊 TOURNAMENT RESULTS", description=summary, color=0xf1c40f)
+    embed.set_footer(text="Dispute Resolved") # Using your requested footer style
+    await ctx.send(embed=embed)
+    await refresh_leaderboard(ctx.guild)
+    
 
 bot.run(TOKEN)
