@@ -189,16 +189,64 @@ async def on_ready():
     print("Arena Tracker Online.")
 
 @bot.command()
-async def report(ctx, opponent: discord.Member):
-    if opponent == ctx.author: return
-    view = ChallengeView(ctx.author, opponent)
+async def rules(ctx):
+    """Displays the official Archive Arena rules and ranking system."""
     embed = discord.Embed(
-        title="📝 CHALLENGE ISSUED",
-        description=f"{opponent.mention}, **{ctx.author.display_name}** has challenged you to a match!\n\nDo you accept?",
+        title="🛡️ ARCHIVE ARENA OFFICIAL RULES",
+        description=(
+            "Welcome to the Arena. To maintain a fair and competitive environment, "
+            "all players must adhere to the following guidelines:\n\n"
+            "**1. Match Reporting**\n"
+            "Both players must report the outcome immediately after a match. "
+            "Intentional false reporting will result in a rank reset or ban.\n\n"
+            "**2. Disputes**\n"
+            "If a dispute occurs, the automated system pauses. Post a screenshot of your "
+            "victory in this channel and wait for a <@&{MOD_ROLE_ID}> to settle it.\n\n"
+            "**3. Sportsmanship**\n"
+            "Toxic behavior, stalling, or 'counter-picking' outside of allowed "
+            "parameters is prohibited.\n\n"
+            "**4. Rank Decay & Smurfing**\n"
+            "Alt accounts are not permitted on the leaderboard. Play on your main "
+            "to keep the rankings accurate."
+        ),
         color=0x7289da
     )
-    embed.set_footer(text="Arena Tracker")
+    
+    # Adding a field for the RP breakdown
+    embed.add_field(
+        name="📊 RANKING SYSTEM",
+        value=(
+            "• 💎 **DIAMOND**: 1800+ RP\n"
+            "• 📀 **PLATINUM**: 1600+ RP\n"
+            "• 🟡 **GOLD**: 1400+ RP\n"
+            "• ⚪ **SILVER**: 1200+ RP\n"
+            "• 🟤 **BRONZE**: 0-1199 RP"
+        ),
+        inline=False
+    )
+    
+    embed.set_footer(text="Arena Tracker • Play Fair, Duel Hard")
+    await ctx.send(embed=embed)
+    
+
+@bot.command(aliases=['challenge'])
+async def duel(ctx, opponent: discord.Member):
+    """Issues a formal challenge to another player."""
+    if opponent == ctx.author: 
+        return await ctx.send("❌ You can't duel yourself! (As much as we all love a good practice session).")
+    
+    if opponent.bot:
+        return await ctx.send("❌ The bots are currently on strike and refuse to duel mortals.")
+
+    view = ChallengeView(ctx.author, opponent)
+    embed = discord.Embed(
+        title="⚔️ CHALLENGE ISSUED",
+        description=f"{opponent.mention}, **{ctx.author.display_name}** has challenged you to a duel!\n\nDo you accept your fate?",
+        color=0x7289da
+    )
+    embed.set_footer(text="Arena Tracker • Awaiting Response")
     await ctx.send(embed=embed, view=view)
+
 
 @bot.command()
 async def rank(ctx, member: discord.Member = None):
@@ -400,9 +448,6 @@ async def tourney_add(ctx, member: discord.Member):
     if not tournament_active:
         return await ctx.send("❌ No tournament is currently open. Use `!tourney_open` first.")
     
-    if tournament_bracket:
-        return await ctx.send("❌ The bracket is already live! You can't add players mid-tournament.")
-
     if member in tournament_players:
         return await ctx.send(f"⚠️ {member.display_name} is already on the list.")
 
@@ -412,20 +457,17 @@ async def tourney_add(ctx, member: discord.Member):
 @bot.command()
 @commands.has_permissions(manage_messages=True)
 async def tourney_kick(ctx, member: discord.Member):
-    """Removes a specific player from the registration list."""
+    """Removes a player from the tournament at any stage (Registration or Active)."""
     global tournament_players
-    if tournament_bracket:
-        return await ctx.send("❌ The bracket has already started! Use `!settle` if you need to forfeit someone.")
-
     if member in tournament_players:
         tournament_players.remove(member)
-        await ctx.send(f"✅ **{member.display_name}** has been removed from the tournament roster.")
+        await ctx.send(f"✅ **{member.display_name}** has been removed from the tournament.")
     else:
         await ctx.send(f"❌ {member.display_name} isn't in the tournament list.")
 
 @bot.command()
 async def tourney_list(ctx):
-    """Shows all players currently signed up."""
+    """Shows all players currently in the tournament."""
     if not tournament_active:
         return await ctx.send("No tournament is currently active.")
     
@@ -461,6 +503,7 @@ async def tourney_end(ctx):
     )
     embed.set_footer(text="Dispute Resolved")
     await ctx.send(embed=embed)
+
     
     
 
