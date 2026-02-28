@@ -217,7 +217,7 @@ async def rules(ctx):
             "• 📀 **PLATINUM**: 1600+ RP\n"
             "• 🟡 **GOLD**: 1400+ RP\n"
             "• ⚪ **SILVER**: 1200+ RP\n"
-            "• 🟤 **BRONZE**: 0-1199 RP"
+            "• <:rookie:1476994147935322265> **BRONZE**: 0-1199 RP"
         ),
         inline=False
     )
