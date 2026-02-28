@@ -8,7 +8,7 @@ import asyncio
 TOKEN = os.environ["DISCORD_TOKEN"]
 LEADERBOARD_CHANNEL_ID = int(os.environ['LEADERBOARD_CHANNEL_ID'])
 LEADERBOARD_MSG_ID = 1476843531191717972 
-MOD_ROLE_ID = 1477213439586996285  # <--- REPLACE THIS WITH YOUR ACTUAL MOD ROLE ID
+MOD_ROLE_ID = 123456789012345678  # <--- Ensure this is your Role ID
 DB_NAME = "arena_tracker.db"
 
 # --- Rank Config ---
@@ -17,7 +17,7 @@ RANKS = [
     {"name": "📀 PLATINUM", "min": 1600, "color": 0xe5e4e2},
     {"name": "🟡 GOLD", "min": 1400, "color": 0xffd700},
     {"name": "<:rookie:1476994147935322265> SILVER", "min": 1200, "color": 0xc0c0c0},
-    {"name": "🟟 BRONZE", "min": 0, "color": 0xcd7f32}
+    {"name": "🟤 BRONZE", "min": 0, "color": 0xcd7f32}
 ]
 
 # --- Database Setup ---
@@ -149,7 +149,6 @@ class MatchReportingView(discord.ui.View):
         p1_rep, p2_rep = self.reports[self.p1.id], self.reports[self.p2.id]
         if p1_rep and p2_rep:
             if p1_rep != p2_rep:
-                # FIXED: Pings moderators properly using Role ID
                 embed = discord.Embed(
                     title="⚠️ MATCH DISPUTE",
                     description=f"**{self.p1.display_name}** and **{self.p2.display_name}** reported different winners.\n\nAutomated tracking is paused. A <@&{MOD_ROLE_ID}> must resolve this manually.",
@@ -236,15 +235,20 @@ async def history(ctx, member: discord.Member = None):
     
     display = ""
     for entry in reversed(raw_hist):
-        try:
-            res, opp, rp = entry.split(":")
+        parts = entry.split(":")
+        if len(parts) == 3: 
+            res, opp, rp = parts
             circle = "🟢" if res == "W" else "🔴"
-            display += f"{circle} **{res}** vs {opp} (`{rp} RP`)\n"
-        except ValueError:
-            display += f"• {entry}\n"
+            arrow = "📈" if res == "W" else "📉"
+            display += f"{circle} **{res}** vs {opp} ({arrow} `{rp} RP`)\n"
+        else: 
+            res = parts[0]
+            circle = "🟢" if res == "W" else "🔴"
+            display += f"{circle} **{res}** (Match data unavailable)\n"
 
     embed = discord.Embed(title=f"📜 {member.display_name}'s History", description=display, color=0x3498db)
-    embed.set_footer(text="Arena Tracker • Last 10 Matches")
+    # FOOTER UPDATED: Removed Arena Tracker
+    embed.set_footer(text="Last 10 Matches")
     await ctx.send(embed=embed)
 
 @bot.command()
@@ -257,6 +261,7 @@ async def settle(ctx, winner: discord.Member, loser: discord.Member):
     
     w_hist = w_data[6].split(",") if w_data[6] else []
     l_hist = l_data[6].split(",") if l_data[6] else []
+    
     w_hist.append(f"W:{loser.display_name}:{pts}")
     l_hist.append(f"L:{winner.display_name}:{pts}")
 
@@ -270,7 +275,8 @@ async def settle(ctx, winner: discord.Member, loser: discord.Member):
     embed = discord.Embed(title="⚖️ JUDGE VERDICT", color=0xe74c3c)
     embed.description = f"**{winner.display_name}** awarded victory over **{loser.display_name}**."
     embed.add_field(name="RP SHIFT", value=f"📈 {winner.display_name}: `+{pts}`\n📉 {loser.display_name}: `-{pts}`")
-    embed.set_footer(text="Arena Tracker • Dispute Resolved")
+    # FOOTER UPDATED: Removed Arena Tracker
+    embed.set_footer(text="Dispute Resolved")
     await ctx.send(embed=embed)
 
 bot.run(TOKEN)
