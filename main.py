@@ -1047,7 +1047,7 @@ tournament_active = False
 tournament_bracket = []  # List of match dictionaries
 
 
-@bot.command(aliases=['payouts', 'tourney']) # 'rules' alias removed to prevent crash
+@bot.command(aliases=['payouts', 'tourney'])
 async def tourny_rules(ctx):
     """Displays the official Cash App tournament and payout rules."""
     embed = discord.Embed(
@@ -1059,14 +1059,15 @@ async def tourny_rules(ctx):
         color=0x00D632 # Cash App Green
     )
 
-    # --- THE REGISTRATION PROCESS ---
+    # --- THE REGISTRATION PROCESS & PRIVACY ---
     embed.add_field(
         name="📝 HOW TO GET PAID (REQUIRED)",
         value=(
             "To receive your prize, you must link your Cash App handle to your profile:\n"
             "1. Type **`!register $YourTag`** (e.g., `!register $ArchiveKing`).\n"
-            "2. This handle is stored **privately**; only Moderators can see it.\n"
-            "3. You only need to do this once. Use the command again to update it."
+            "2. **PRIVACY LOCK:** Your $Cashtag is **NOT** visible on your public `!profile` card.\n"
+            "3. **STAFF ONLY:** Only authorized Moderators can retrieve your tag for the purpose of sending prize money.\n"
+            "4. Use the command again at any time to update your information."
         ),
         inline=False
     )
@@ -1097,6 +1098,7 @@ async def tourny_rules(ctx):
 
     embed.set_footer(text="Archive Arena • Secure Payout System")
     await ctx.send(embed=embed)
+
     
     
 
