@@ -18,6 +18,8 @@ MOD_ROLE_ID = 123456789012345678  # <--- Ensure this is your Role ID
 DB_NAME = os.getenv("DB_PATH", "arena_tracker.db")
 
 def init_db():
+    global DB_NAME
+            DB_NAME = "arena_tracker.db"
     # If the path includes a folder (like /data/), make sure the folder exists
     db_dir = os.path.dirname(DB_NAME)
     if db_dir and not os.path.exists(db_dir):
@@ -26,8 +28,6 @@ def init_db():
         except OSError:
             print(f"Directory {db_dir} could not be created. Using local root.")
             # Fallback to local if Railway Volume isn't mounted yet
-            global DB_NAME
-            DB_NAME = "arena_tracker.db"
 
     conn = sqlite3.connect(DB_NAME)
     # ... rest of your table creation code ...
