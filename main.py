@@ -1179,6 +1179,10 @@ def run():
 def keep_alive():
     t = Thread(target=run)
     t.start()
+
+@app.route('/')
+def home():
+    return "Bot is running!"
     
 
 bot.run(TOKEN)
