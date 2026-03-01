@@ -66,7 +66,7 @@ def init_db():
     conn.commit()
     conn.close()
 
- 3. DATABASE HELPER (Block 1)
+ #3.DATABASE HELPER (Block 1)
 def get_or_create_user(user_id, name):
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
