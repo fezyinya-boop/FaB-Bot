@@ -81,6 +81,8 @@ async def update_player_role(member, points):
         await member.remove_roles(*to_remove)
         await member.add_roles(role)
 
+bot = commands.Bot(command_prefix="!")
+
 @bot.command()
 async def ranks(ctx):
     """Displays the RP requirements and custom icons for all ranks."""
