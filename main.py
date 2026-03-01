@@ -1055,8 +1055,7 @@ async def payout_info_launcher(ctx):
     embed.add_field(
         name="📝 HOW TO LINK YOUR CASH APP",
         value=(
-            "To get paid, you must link your cashtag handle to our internal database, users can wipe thier data
-            with !unregister at anytime:\n"
+            "To get paid, you must link your cashtag handle to our internal database:\n"
             "1. Type **`!register $YourTag`** (e.g., `!register $ArchiveKing`).\n"
             "2. **PRIVACY LOCK:** Your $Cashtag is **NOT** visible on your public `!profile` card.\n"
             "3. **STAFF ONLY:** Only authorized Moderators can view your tag for prize distribution."
