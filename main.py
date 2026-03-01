@@ -294,6 +294,28 @@ async def on_ready():
     init_db()
     print("Arena Tracker Online.")
 
+
+@bot.command()
+@commands.has_permissions(administrator=True)
+async def fix_database(ctx):
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+    try:
+        # This creates the missing config table
+        c.execute('''CREATE TABLE IF NOT EXISTS config (key TEXT PRIMARY KEY, value TEXT)''')
+        # Also ensure 'streak' column exists in users table just in case
+        try:
+            c.execute("ALTER TABLE users ADD COLUMN streak INTEGER DEFAULT 0")
+        except:
+            pass # Already exists
+        conn.commit()
+        await ctx.send("✅ Database tables patched! You can now use !settle.")
+    except Exception as e:
+        await ctx.send(f"❌ Error patching database: {e}")
+    finally:
+        conn.close()
+        
+
 @bot.command()
 async def rules(ctx):
     """Displays the official Archive Arena rules and ranking system."""
