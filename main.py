@@ -236,6 +236,34 @@ async def leaderboard(ctx):
     # This just triggers the same refresh logic manually
     await refresh_leaderboard(ctx.guild)
     await ctx.send("✅ Leaderboard refreshed/posted in the designated channel!")
+
+app = Flask('')
+CORS(app)
+
+@app.route('/api/leaderboard')
+def get_lb():
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+    c.execute("SELECT name, points, wins, losses, streak FROM users ORDER BY points DESC LIMIT 50")
+    players = []
+    for r in c.fetchall():
+        # Determine rank name
+        rank_name = "BRONZE"
+        for rank in RANKS:
+            if r[1] >= rank['min']:
+                rank_name = rank['name'].split()[-1].lower()
+                break
+        players.append({"name": r[0], "points": r[1], "wins": r[2], "losses": r[3], "streak": r[4], "rank": rank_name})
+    conn.close()
+    return jsonify(players)
+
+def run():
+    app.run(host='0.0.0.0', port=8080)
+
+def keep_alive():
+    t = Thread(target=run)
+    t.start()
+    
     
 @bot.event
 async def on_ready():
