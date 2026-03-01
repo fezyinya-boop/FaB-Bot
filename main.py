@@ -9,6 +9,7 @@ from profile_card import make_profile_card, fetch_avatar
 from leaderboard_gen import make_leaderboard_image
 from flask import Flask, jsonify
 from flask_cors import CORS
+from threading import Thread
 
 
 # --- Config & Secrets ---
@@ -239,33 +240,6 @@ async def leaderboard(ctx):
     # This just triggers the same refresh logic manually
     await refresh_leaderboard(ctx.guild)
     await ctx.send("✅ Leaderboard refreshed/posted in the designated channel!")
-
-app = Flask('')
-CORS(app)
-
-@app.route('/api/leaderboard')
-def get_lb():
-    conn = sqlite3.connect(DB_NAME)
-    c = conn.cursor()
-    c.execute("SELECT name, points, wins, losses, streak FROM users ORDER BY points DESC LIMIT 50")
-    players = []
-    for r in c.fetchall():
-        # Determine rank name
-        rank_name = "BRONZE"
-        for rank in RANKS:
-            if r[1] >= rank['min']:
-                rank_name = rank['name'].split()[-1].lower()
-                break
-        players.append({"name": r[0], "points": r[1], "wins": r[2], "losses": r[3], "streak": r[4], "rank": rank_name})
-    conn.close()
-    return jsonify(players)
-
-def run():
-    app.run(host='0.0.0.0', port=8080)
-
-def keep_alive():
-    t = Thread(target=run)
-    t.start()
     
     
 @bot.event
@@ -658,7 +632,7 @@ async def rank(ctx, member: discord.Member = None):
         progress_val = "▰▰▰▰▰▰▰▰▰▰ **MAX RANK**"
 
     # --- Build the Embed ---
-    embed = discord.Embed(title=f"战 {member.display_name}", color=r_info["color"])
+    embed = discord.Embed(title=f"{member.display_name}", color=r_info["color"])
     embed.add_field(name="🏆 RATING", value=f"{pts} RP", inline=True)
     embed.add_field(name="🔥 STREAK", value=f"{data[5]} Wins", inline=True)
     
@@ -791,7 +765,6 @@ async def settle(ctx, winner: discord.Member, loser: discord.Member):
     # FOOTER UPDATED: Removed Arena Tracker
     embed.set_footer(text="Dispute Resolved")
     await ctx.send(embed=embed)
-    await refresh_leaderboard(ctx.guild)
 
 # --- Tournament Globals ---
 tournament_players = []  # List of member objects
@@ -975,9 +948,6 @@ async def clear(ctx, amount: int = 100):
     deleted = await ctx.channel.purge(limit=amount + 1)
     await ctx.send(f"✅ Cleared `{len(deleted)-1}` messages.", delete_after=5)
     
-    from flask import Flask, jsonify
-from threading import Thread
-from flask_cors import CORS
 
 app = Flask('')
 CORS(app) # This allows your website to talk to the bot
