@@ -8,7 +8,6 @@ def load_custom_font(font_filename, size):
     font_path = os.path.join(os.path.dirname(__file__), "fonts", font_filename)
     if os.path.exists(font_path):
         return ImageFont.truetype(font_path, size)
-    # Check system paths for DejaVu if it's not in your local folder
     return ImageFont.load_default()
 
 # --- RANK BADGE UTILS ---
@@ -24,7 +23,7 @@ RANK_BADGES = {
     "BRONZE":   os.path.join(BADGES_DIR, 'rank_bronze.png'),
 }
 
-def get_rank_badge(rank_name_raw: str, size: int = 35): # Small & subtle
+def get_rank_badge(rank_name_raw: str, size: int = 35):
     clean = clean_rank_name(str(rank_name_raw)).upper()
     path = RANK_BADGES.get(clean)
     if not path or not os.path.exists(path):
@@ -45,20 +44,25 @@ def make_leaderboard_image(players):
     draw = ImageDraw.Draw(card)
 
     # 2. FONTS
-    f_title = load_custom_font("Orbitron-VariableFont_wght.ttf", 45)
-    f_rank  = load_custom_font("Michroma-Regular.ttf", 22)
-    # Switch to DejaVuSans-Bold for the "Big Pop" names
-    f_name  = load_custom_font("DejaVuSans-Bold.ttf", 42) 
-    f_pts   = load_custom_font("Michroma-Regular.ttf", 26)
-    f_label = load_custom_font("Michroma-Regular.ttf", 14)
+    f_title  = load_custom_font("Orbitron-VariableFont_wght.ttf", 45)
+    f_rank   = load_custom_font("Michroma-Regular.ttf", 22)
+    
+    # Names: Scaled down from 42 to 32 for better fit
+    f_name   = load_custom_font("DejaVuSans-Bold.ttf", 32) 
+    
+    # Headers: Switched to Bold for visibility
+    f_label  = load_custom_font("DejaVuSans-Bold.ttf", 14) 
+    
+    f_pts    = load_custom_font("Michroma-Regular.ttf", 26)
 
     # 3. HEADER
     draw.rectangle([(0, 0), (W, 115)], fill=(18, 18, 18))
     draw.text((40, 35), "ARENA RANKINGS", font=f_title, fill=(255, 255, 255))
     
-    draw.text((40, 118), "RANK", font=f_label, fill=(100, 100, 100))
-    draw.text((160, 118), "CONTENDER", font=f_label, fill=(100, 100, 100))
-    draw.text((W - 180, 118), "RATING", font=f_label, fill=(100, 100, 100))
+    # Bold Labels (High visibility)
+    draw.text((40, 118), "RANK", font=f_label, fill=(130, 130, 130))
+    draw.text((160, 118), "CONTENDER", font=f_label, fill=(130, 130, 130))
+    draw.text((W - 180, 118), "RATING", font=f_label, fill=(130, 130, 130))
 
     # 4. PLAYER ROWS
     curr_y = header_h
@@ -73,21 +77,18 @@ def make_leaderboard_image(players):
         # Rank Number
         draw.text((45, curr_y + 18), f"#{rank_num:02d}", font=f_rank, fill=(180, 180, 180))
 
-        # --- RANK EMBLEM (SMALLER) ---
-        badge = get_rank_badge(rank_name, size=40) 
+        # --- RANK EMBLEM (SMALL & CLEAN) ---
+        badge = get_rank_badge(rank_name, size=38) 
         name_x = 160
         if badge:
-            # Centered vertically in the row
-            card.paste(badge, (160, curr_y + 12), badge)
-            name_x += 55 
+            card.paste(badge, (160, curr_y + 14), badge)
+            name_x += 52 
 
-        # --- DEJAVU BOLD NAME ---
+        # --- PLAYER NAME (REDUCED SIZE) ---
         name_text = p['name'].upper()
-        # Subtle name shadow for depth
-        draw.text((name_x + 2, curr_y + 10), name_text, font=f_name, fill=(0, 0, 0, 200))
-        draw.text((name_x, curr_y + 8), name_text, font=f_name, fill=(255, 255, 255))
+        draw.text((name_x, curr_y + 12), name_text, font=f_name, fill=(255, 255, 255))
         
-        # Rating (Michroma - Pushed right)
+        # Rating
         draw.text((W - 180, curr_y + 18), str(p['pts']), font=f_pts, fill=color)
 
         # Side Accent Glow
@@ -96,8 +97,8 @@ def make_leaderboard_image(players):
 
         curr_y += row_h
 
-    # 5. FOOTER
-    draw.text((W//2, H - 20), "BATTLE DATA VERIFIED // SEASON 1", font=f_label, fill=(70, 70, 70), anchor="mm")
+    # 5. NEW FOOTER
+    draw.text((W//2, H - 20), "Archive Arena • Season 1", font=f_label, fill=(80, 80, 80), anchor="mm")
 
     buf = io.BytesIO()
     card.save(buf, 'PNG')
