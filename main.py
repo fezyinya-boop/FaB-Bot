@@ -52,6 +52,32 @@ def init_db():
                   signature_move TEXT DEFAULT 'None', 
                   embed_color TEXT)''')
 
+    # 1. Official Meta Archetypes
+    c.execute("""CREATE TABLE IF NOT EXISTS archetypes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT UNIQUE,
+        tier TEXT DEFAULT 'Untiered'
+    )""")
+
+    # 2. Match History with Deck Tracking
+    c.execute("""CREATE TABLE IF NOT EXISTS matches (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        p1_id TEXT, 
+        p2_id TEXT,
+        p1_deck TEXT, 
+        p2_deck TEXT,
+        winner_id TEXT,
+        status TEXT DEFAULT 'active',
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+    )""")
+    
+    # 3. Config Table for the Leaderboard Message ID
+    c.execute("CREATE TABLE IF NOT EXISTS config (key TEXT PRIMARY KEY, value TEXT)")
+
+    # 4. Optional: Pre-populate with current GA Meta
+    meta_decks = [('Rai', 'S'), ('Silvie', 'S'), ('Lorraine', 'A'), ('Mordred', 'A')]
+    c.executemany("INSERT OR IGNORE INTO archetypes (name, tier) VALUES (?, ?)", meta_decks)
+
     conn.commit()
     conn.close()
     print(f"🚀 Database initialized at: {DB_NAME}")
