@@ -240,7 +240,8 @@ async def leaderboard(ctx):
 @bot.event
 async def on_ready():
     init_db()
-    
+    keep_alive()
+    print("Web API and Bot are both running.")
     # 🔗 Link your existing message to the Database
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
@@ -943,6 +944,34 @@ async def clear(ctx, amount: int = 100):
     deleted = await ctx.channel.purge(limit=amount + 1)
     await ctx.send(f"✅ Cleared `{len(deleted)-1}` messages.", delete_after=5)
     
+    from flask import Flask, jsonify
+from threading import Thread
+from flask_cors import CORS
+
+app = Flask('')
+CORS(app) # This allows your website to talk to the bot
+
+@app.route('/')
+def home():
+    return "Arena API is Online"
+
+@app.route('/api/leaderboard')
+def get_leaderboard():
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+    # Fetch top 50 for the web
+    c.execute("SELECT name, points, wins, losses, streak FROM users ORDER BY points DESC LIMIT 50")
+    data = [{"name": r[0], "points": r[1], "wins": r[2], "losses": r[3], "streak": r[4]} for r in c.fetchall()]
+    conn.close()
+    return jsonify(data)
+
+def run():
+    # Railway uses port 8080 by default
+    app.run(host='0.0.0.0', port=8080)
+
+def keep_alive():
+    t = Thread(target=run)
+    t.start()
     
 
 bot.run(TOKEN)
