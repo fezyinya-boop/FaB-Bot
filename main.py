@@ -5,7 +5,7 @@ import os
 import asyncio
 import math
 import random
-from profile_card import make_profile_card
+from profile_card import make_profile_card fetch_avatar
 
 # --- Config & Secrets ---
 TOKEN = os.environ["DISCORD_TOKEN"]
