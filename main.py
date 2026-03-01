@@ -41,7 +41,7 @@ def init_db():
     
     # User Statistics & Match History
     c.execute('''CREATE TABLE IF NOT EXISTS users 
-                 (user_id TEXT PRIMARY KEY, name TEXT, cashtag TEXT, points INTEGER, 
+                 (user_id TEXT PRIMARY KEY, name TEXT, points INTEGER, 
                   wins INTEGER, losses INTEGER, streak INTEGER, history TEXT)''')
     
     # Leaderboard & Bot Configuration
@@ -50,7 +50,7 @@ def init_db():
 
     # RPG Profile Customization (class_name removed)
     c.execute('''CREATE TABLE IF NOT EXISTS profiles 
-                 (user_id TEXT PRIMARY KEY, 
+                 (user_id TEXT PRIMARY KEY, cashtag TEXT,
                   title TEXT DEFAULT 'Aspirant', 
                   signature_move TEXT DEFAULT 'None', 
                   embed_color TEXT)''')
@@ -643,46 +643,38 @@ async def list_commands(ctx):
     await ctx.send(embed=embed)
     
 
-
 @bot.command()
 async def profile(ctx, member: discord.Member = None):
     member = member or ctx.author
     
-    # 1. Fetch data from users table
-    # Expected: (id, name, pts, wins, losses, streak, history)
     data = get_or_create_user(member.id, member.display_name)
     pts = data[2]
 
-    # 2. Fetch data from profiles table
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
-    c.execute("SELECT title, embed_color , signature_move, cashtag FROM profiles WHERE user_id = ?", (str(member.id),))
-    bio = c.fetchone() or ("Aspirant", "None", None)
+    # Added cashtag to the SELECT to match the 4 variables below
+    c.execute("SELECT title, signature_move, embed_color, cashtag FROM profiles WHERE user_id = ?", (str(member.id),))
+    bio = c.fetchone() or ("Aspirant", "None", None, "Not Linked")
     conn.close()
+    
+    # Now this matches the 4 columns selected above
     p_title, p_move, p_color, p_cashtag = bio
 
-    # 3. Rank Logic (The exact !rank sync)
-    r_info = get_rank_info(pts) # Gets your current rank dict
+    r_info = get_rank_info(pts)
     rank_emoji = r_info['name'].split(' ')[0]
 
-    # Find next rank
     next_rank = next((r for r in reversed(RANKS) if r['min'] > pts), None)
 
-    # 4. Progress Bar with Emoji Target
     if next_rank:
         next_emoji = next_rank['name'].split(' ')[0]
         total_needed = next_rank['min'] - r_info['min']
         current_progress = pts - r_info['min']
-        
         percent_int = min(max(int((current_progress / total_needed) * 10), 0), 10)
         bar = "▰" * percent_int + "▱" * (10 - percent_int)
-        perc_text = int((current_progress / total_needed) * 100)
-        
-        prog_display = f"{bar} {perc_text}% to {next_emoji}"
+        prog_display = f"{bar} {int((current_progress / total_needed) * 100)}% to {next_emoji}"
     else:
         prog_display = "▰▰▰▰▰▰▰▰▰▰ **MAX RANK REACHED**"
 
-    # 5. Build the Embed
     try:
         color_value = int(p_color, 16) if p_color else r_info["color"]
     except:
@@ -700,10 +692,12 @@ async def profile(ctx, member: discord.Member = None):
     embed.add_field(name="🔥 Streak", value=f"{data[5]} Win Streak", inline=True)
     embed.add_field(name="🚀 Rank Progress", value=prog_display, inline=False)
     
+    # Note: $Cashtag is NOT added to this embed to keep it private as requested.
+    
     embed.set_thumbnail(url=member.display_avatar.url)
     embed.set_footer(text="Archive Arena | Season 1")
-
     await ctx.send(embed=embed)
+
 
 
     
@@ -1047,8 +1041,9 @@ tournament_active = False
 tournament_bracket = []  # List of match dictionaries
 
 @bot.command(name="payout_info", aliases=["payouts", "tourney"]) 
-async def payout_info(ctx):
+async def payout_info_launcher(ctx):
     """Displays tournament structure and the private registration process."""
+    # Ensure you have MOD_ROLE_ID defined at the top of your script
     embed = discord.Embed(
         title="🏆 ARCHIVE ARENA: TOURNAMENT & PAYOUTS",
         description=(
@@ -1058,19 +1053,17 @@ async def payout_info(ctx):
         color=0x00D632 # Cash App Green
     )
 
-    # --- THE REGISTRATION PROCESS ---
     embed.add_field(
         name="📝 HOW TO LINK YOUR CASH APP",
         value=(
             "To get paid, you must link your handle to our internal database:\n"
             "1. Type **`!register $YourTag`** (e.g., `!register $ArchiveKing`).\n"
-            "2. **PRIVACY:** This is **NOT** shown on your public profile card.\n"
-            "3. **ACCESS:** Only Moderators can see this to send your prize money."
+            "2. **PRIVACY LOCK:** Your $Cashtag is **NOT** visible on your public `!profile` card.\n"
+            "3. **STAFF ONLY:** Only authorized Moderators can view your tag for prize distribution."
         ),
         inline=False
     )
 
-    # --- MATCH & PAYOUT RULES ---
     embed.add_field(
         name="📲 PAYOUT POLICIES",
         value=(
@@ -1089,6 +1082,7 @@ async def payout_info(ctx):
 
     embed.set_footer(text="Archive Arena • Secure Internal Payouts")
     await ctx.send(embed=embed)
+    
     
 
 
