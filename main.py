@@ -464,7 +464,7 @@ async def on_ready():
         name="Arena Tracker is Online"
     ))
 
-@bot.command(aliases=['rules', 'payouts'])
+@bot.command(aliases=['payouts']) # Removed 'rules' from here
 async def tourny_rules(ctx):
     """Displays the official Cash App tournament and payout rules."""
     embed = discord.Embed(
