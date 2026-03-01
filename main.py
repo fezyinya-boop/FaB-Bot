@@ -339,13 +339,15 @@ async def setprofile(ctx, field: str, *, value: str):
 async def profile(ctx, member: discord.Member = None):
     member = member or ctx.author
     
-    # 1. Fetch Data
+    # 1. Fetch Data from both tables
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
+    
+    # Get Stats (Default to 1000 RP if new)
     c.execute("SELECT points, wins, losses, streak FROM users WHERE user_id = ?", (str(member.id),))
-    # Default to 1000 RP if user isn't in DB yet
     stats = c.fetchone() or (1000, 0, 0, 0)
     
+    # Get RPG Bio (Default if no profile set)
     c.execute("SELECT title, signature_move, embed_color FROM profiles WHERE user_id = ?", (str(member.id),))
     bio = c.fetchone() or ("Aspirant", "None", None)
     conn.close()
@@ -353,63 +355,66 @@ async def profile(ctx, member: discord.Member = None):
     pts, wins, losses, streak = stats
     p_title, p_move, p_color = bio
 
-    # 2. Rank Finder
+    # 2. Rank & Progress Logic (The !rank Sync)
     current_rank = RANKS[0]
     next_rank = None
     
-    # Find the highest rank the player has cleared
     for i, r in enumerate(RANKS):
         if pts >= r['min']:
             current_rank = r
             if i + 1 < len(RANKS):
                 next_rank = RANKS[i+1]
+            else:
+                next_rank = None
 
     rank_emoji = current_rank['name'].split(' ')[0]
 
-    # 3. Embed Setup
+    # 3. Build the Embed
+    # Handle custom color or default to current rank color
     try:
         color_value = int(p_color, 16) if p_color else current_rank["color"]
     except:
         color_value = current_rank["color"]
 
     embed = discord.Embed(title=f"{rank_emoji} {member.display_name}", color=color_value)
+    
+    # RPG Section
     embed.add_field(name="📜 Title", value=f"*{p_title}*", inline=True)
     embed.add_field(name="✨ Signature Move", value=f"**{p_move}**", inline=True)
 
+    # Stats Section
     wr = round((wins / (wins + losses)) * 100) if (wins + losses) > 0 else 0
     embed.add_field(name="🏆 Rating", value=f"`{pts} RP`", inline=True)
     embed.add_field(name="⚔️ Record", value=f"{wins}W - {losses}L ({wr}%)", inline=True)
     embed.add_field(name="🔥 Streak", value=f"{streak} Win Streak", inline=True)
 
-    # 4. Progress Bar Calculation
+    # 4. The Progress Bar (Exact !rank Logic)
     if next_rank:
         target_label = next_rank['name'].split(' ')[-1]
         
-        # Floor is the current rank's requirement (e.g., 1000)
-        # Ceiling is the next rank's requirement (e.g., 1200)
-        floor = current_rank['min']
-        ceiling = next_rank['min']
+        # Calculate tier requirements
+        total_needed_in_tier = next_rank['min'] - current_rank['min']
+        current_progress_in_tier = pts - current_rank['min']
         
-        # How many points earned SINCE reaching the current rank
-        progress_in_tier = pts - floor
-        # Total points needed to bridge the gap between tiers
-        needed_in_tier = ceiling - floor
-        
-        # Calculate percentage
-        percent = min(max(int((progress_in_tier / needed_in_tier) * 100), 0), 100)
-        filled_blocks = min(max(int((progress_in_tier / needed_in_tier) * 10), 0), 10)
+        # Calculate percentages and blocks
+        # We use max(..., 0) to ensure starting at 1000 RP doesn't break the math
+        percent = min(max(int((current_progress_in_tier / total_needed_in_tier) * 100), 0), 100)
+        filled_blocks = min(max(int((current_progress_in_tier / total_needed_in_tier) * 10), 0), 10)
         
         bar = "▰" * filled_blocks + "▱" * (10 - filled_blocks)
         prog_display = f"{bar} {percent}% to **{target_label}**"
     else:
-        # If points >= 1800 (Diamond), show the "Apex" bar
+        # Only shows if they have cleared the highest 'min' in RANKS
         prog_display = "▰▰▰▰▰▰▰▰▰▰ **ASCENDED**"
 
     embed.add_field(name="🚀 Rank Progress", value=prog_display, inline=False)
+    
+    # Visuals
     embed.set_thumbnail(url=member.display_avatar.url)
-    embed.set_footer(text="Archive Arena Season 1")
+    embed.set_footer(text="Archive Arena | Season 1")
 
-    await ctx.send(embed=embed)
+    await ctx
+
 
     
 
