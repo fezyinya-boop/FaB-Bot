@@ -685,76 +685,56 @@ async def history(ctx, member: discord.Member = None):
     await ctx.send(embed=embed)
 
 async def refresh_leaderboard(guild):
-    channel = guild.get_channel(LEADERBOARD_CHANNEL_ID)
-    if not channel: return
-
-    # 1. Fetch data from your local DB
-    conn = sqlite3.connect(DB_NAME)
-    c = conn.cursor()
-    c.execute("SELECT name, points, streak FROM users ORDER BY points DESC LIMIT 10")
-    top_players = c.fetchall()
-    
-    # Get the saved message ID to edit it
-    c.execute("SELECT value FROM config WHERE key = 'leaderboard_msg_id'")
-    row = c.fetchone()
-    saved_msg_id = int(row[0]) if row else None
-    conn.close()
-
-    # 2. Build a high-quality Text Embed
-    embed = discord.Embed(title="⚔️ ARCHIVE ARENA: TOP 10", color=0xFFD700)
-    description = ""
-    for i, (name, pts, streak) in enumerate(top_players, 1):
-        medal = "🥇" if i == 1 else "🥈" if i == 2 else "🥉" if i == 3 else "💀"
-        fire = "🔥" if streak >= 3 else ""
-        description += f"{medal} **{name}** {fire} — `{pts} RP`\n"
-    
-    embed.description = description or "The arena is silent..."
-    embed.set_footer(text="Updates live | View full ranks at your-link.com")
-
-    # 3. Update the existing message
-    if saved_msg_id:
-        try:
-            msg = await channel.fetch_message(saved_msg_id)
-            await msg.edit(embed=embed)
-        except:
-            new_msg = await channel.send(embed=embed)
-            # Update ID in DB
-            # (Insert SQL update here)
-    else:
-        new_msg = await channel.send(embed=embed)
-        # (Insert SQL save here)
-        
-
-    # --- PART 3: UPDATE VISUAL SCREENSHOT (WEBSITE VERSION) ---
-    # Update this URL to your actual Railway public domain
-    SITE_URL = "https://arena-tracker-agent-production.up.railway.app" 
-    
     try:
-        # 1. Capture the photo
-        from leaderboard_snapshot import capture_leaderboard # Ensure you have the file we discussed
-        image_path = await capture_leaderboard(SITE_URL)
-        file = discord.File(image_path, filename="arena_leaderboard.png")
+        channel = guild.get_channel(LEADERBOARD_CHANNEL_ID)
+        if not channel: return
 
-        # 2. Delete the old image message to prevent clutter
-        if saved_visual_id:
-            try:
-                old_visual_msg = await channel.fetch_message(saved_visual_id)
-                await old_visual_msg.delete()
-            except:
-                pass # Message already deleted or missing
-
-        # 3. Post the fresh image
-        new_visual_msg = await channel.send(content="**🏆 OFFICIAL RANKINGS // SEASON 1**", file=file)
-
-        # 4. Save new visual ID to DB
+        # 1. Fetch data from your local DB
         conn = sqlite3.connect(DB_NAME)
         c = conn.cursor()
-        c.execute("INSERT OR REPLACE INTO config (key, value) VALUES ('visual_lb_msg_id', ?)", (str(new_visual_msg.id),))
-        conn.commit()
+        c.execute("SELECT name, points, streak FROM users ORDER BY points DESC LIMIT 10")
+        top_players = c.fetchall()
+        
+        # Get the saved message ID to edit it
+        c.execute("SELECT value FROM config WHERE key = 'leaderboard_msg_id'")
+        row = c.fetchone()
+        saved_msg_id = int(row[0]) if row else None
         conn.close()
 
+        # 2. Build the Embed
+        embed = discord.Embed(title="⚔️ ARCHIVE ARENA: TOP 10", color=0xFFD700)
+        description = ""
+        for i, (name, pts, streak) in enumerate(top_players, 1):
+            medal = "🥇" if i == 1 else "🥈" if i == 2 else "🥉" if i == 3 else "💀"
+            fire = "🔥" if streak >= 3 else ""
+            description += f"{medal} **{name}** {fire} — `{pts} RP`\n"
+        
+        embed.description = description or "The arena is silent..."
+        embed.set_footer(text="Updates live | View full ranks at fezyinya-boop.github.io/Arena-Tracker/")
+
+        # 3. Update or Send new message
+        new_msg = None
+        if saved_msg_id:
+            try:
+                msg = await channel.fetch_message(saved_msg_id)
+                await msg.edit(embed=embed)
+            except:
+                # If message was deleted, send a new one
+                new_msg = await channel.send(embed=embed)
+        else:
+            new_msg = await channel.send(embed=embed)
+
+        # 4. Save the New ID if we had to send a new message
+        if new_msg:
+            conn = sqlite3.connect(DB_NAME)
+            c = conn.cursor()
+            c.execute("INSERT OR REPLACE INTO config (key, value) VALUES ('leaderboard_msg_id', ?)", (str(new_msg.id),))
+            conn.commit()
+            conn.close()
+
     except Exception as e:
-        print(f"📸 Visual Refresh Error: {e}")
+        print(f"Refresh Failed: {e}")
+        
 
 
 
