@@ -80,7 +80,7 @@ def init_db():
 
     conn.commit()
     conn.close()
-    print(f"🚀 Database initialized at: {DB_NAME}")
+    print(f"🚀 Database initialized, Meta tracking active: {DB_NAME}")
 
     
 
@@ -270,20 +270,23 @@ async def leaderboard(ctx):
     
 @bot.event
 async def on_ready():
+    # Run the overhaul immediately on startup
     init_db()
-    keep_alive()
-    print("Web API and Bot are both running.")
-    # 🔗 Link your existing message to the Database
-    conn = sqlite3.connect(DB_NAME)
-    c = conn.cursor()
-    target_id = '1476843531191717972' 
     
-    c.execute("INSERT OR IGNORE INTO config (key, value) VALUES ('leaderboard_msg_id', ?)", (target_id,))
-    conn.commit()
-    conn.close()
+    # Sync commands for Slash Commands/Buttons
+    try:
+        await bot.tree.sync()
+    except Exception as e:
+        print(f"Sync error: {e}")
+
+    print(f'Logged in as {bot.user.name}')
+    print('Status: Arena Meta Tracker is Online.')
     
-    print(f"Logged in as {bot.user} | Leaderboard linked to {target_id}")
-    print("Arena Tracker Online.")
+    # Set the bot's "Watching" status
+    await bot.change_presence(activity=discord.Activity(
+        type=discord.ActivityType.watching, 
+        name="Arena Tracker is Online"
+    ))
 
 @bot.command()
 @commands.has_permissions(administrator=True)
