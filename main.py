@@ -10,6 +10,9 @@ from leaderboard_gen import make_leaderboard_image
 from flask import Flask, jsonify
 from flask_cors import CORS
 from threading import Thread
+import pandas as pd
+from tabulate import tabulate 
+from discord import ui
 
 
 # --- Config & Secrets ---
@@ -260,6 +263,55 @@ async def ranks(ctx):
     embed.set_footer(text="Higher ranks earn more prestige in the Leaderboard!")
     
     await ctx.send(embed=embed)
+
+
+@bot.command()
+async def meta(ctx):
+    conn = sqlite3.connect(DB_NAME)
+    
+    # This query gathers all completed matches where decks were recorded
+    query = """
+    SELECT 
+        p1_deck, 
+        p2_deck, 
+        winner_id, 
+        p1_id 
+    FROM matches 
+    WHERE p1_deck IS NOT NULL 
+      AND p2_deck IS NOT NULL 
+      AND status = 'completed'
+    """
+    
+    try:
+        df = pd.read_sql_query(query, conn)
+        conn.close()
+
+        if df.empty:
+            return await ctx.send("📊 **No meta data yet.** Start settling some matches with decks locked in!")
+
+        # Logic to determine if P1 (Deck A) won or lost
+        df['won'] = df.apply(lambda x: 1 if str(x['winner_id']) == str(x['p1_id']) else 0, axis=1)
+
+        # Grouping by the matchup
+        stats = df.groupby(['p1_deck', 'p2_deck']).agg(
+            Total_Games=('won', 'count'),
+            Wins=('won', 'sum')
+        ).reset_index()
+
+        # Calculate Win Rate
+        stats['WR%'] = ((stats['Wins'] / stats['Total_Games']) * 100).round(1)
+
+        # Rename columns for a cleaner table
+        stats.columns = ['Deck A', 'Deck B', 'Games', 'Wins', 'WR%']
+
+        # Create the visual table
+        table = tabulate(stats, headers='keys', tablefmt='pretty', showindex=False)
+        
+        await ctx.send(f"📊 **CURRENT ARENA META SNAPSHOT**\n```\n{table}\n```")
+
+    except Exception as e:
+        print(f"Meta Command Error: {e}")
+        await ctx.send("❌ Error calculating meta stats. Make sure matches are being settled properly.")
 
 @bot.command()
 async def leaderboard(ctx):
@@ -766,36 +818,69 @@ async def refresh_leaderboard(guild):
         
 
 
-
-    
-
 @bot.command()
 @commands.has_permissions(manage_messages=True)
 async def settle(ctx, winner: discord.Member, loser: discord.Member):
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+
+    # 1. FORCE FIND the disputed match
+    # We don't care about what they reported (p1_report/p2_report)
+    # We just find the most recent 'active' match involving both players.
+    c.execute("""
+        SELECT id, p1_id, p1_deck, p2_id, p2_deck FROM matches 
+        WHERE ((p1_id = ? AND p2_id = ?) OR (p1_id = ? AND p2_id = ?))
+        AND status = 'active'
+        ORDER BY timestamp DESC LIMIT 1
+    """, (str(winner.id), str(loser.id), str(loser.id), str(winner.id)))
+    
+    match_row = c.fetchone()
+
+    if match_row:
+        match_id, p1_id, p1_deck, p2_id, p2_deck = match_row
+        
+        # 2. RESOLVE THE META
+        # The Judge's 'winner' argument determines the winner_id for the stats
+        c.execute("UPDATE matches SET winner_id = ?, status = 'completed' WHERE id = ?", 
+                  (str(winner.id), match_id))
+        conn.commit()
+        match_info = f"⚖️ Dispute resolved: **{p1_deck} vs {p2_deck}** recorded."
+    else:
+        match_info = "⚠️ Warning: No active match found. RP adjusted manually, but no meta data recorded."
+
+    # 3. THE ELO MATH (Your original logic)
     w_data = get_or_create_user(winner.id, winner.display_name)
     l_data = get_or_create_user(loser.id, loser.display_name)
     r1, r2 = w_data[2], l_data[2]
+    
+    # ELO Calculation: $pts = 32 * (1 - \frac{1}{1 + 10^{(r2-r1)/400}})$
     pts = round(32 * (1 - (1 / (1 + 10 ** ((r2 - r1) / 400)))))
     
+    # 4. UPDATE STATS & ROLES
     w_hist = w_data[6].split(",") if w_data[6] else []
     l_hist = l_data[6].split(",") if l_data[6] else []
-    
     w_hist.append(f"W:{loser.display_name}:{pts}")
     l_hist.append(f"L:{winner.display_name}:{pts}")
 
     update_user_stats(winner.id, r1+pts, w_data[3]+1, w_data[4], w_data[5]+1, w_hist)
     update_user_stats(loser.id, r2-pts, l_data[3], l_data[4]+1, 0, l_hist)
     
+    conn.close()
+
     await update_player_role(winner, r1+pts)
     await update_player_role(loser, r2-pts)
     await refresh_leaderboard(ctx.guild)
     
-    embed = discord.Embed(title="⚖️ JUDGE VERDICT", color=0xe74c3c)
-    embed.description = f"**{winner.display_name}** awarded victory over **{loser.display_name}**."
+    # 5. JUDGE VERDICT EMBED
+    embed = discord.Embed(title="⚖️ JUDGE VERDICT (DISPUTE RESOLVED)", color=0xe74c3c)
+    embed.description = f"**{winner.display_name}** is confirmed the winner over **{loser.display_name}**."
     embed.add_field(name="RP SHIFT", value=f"📈 {winner.display_name}: `+{pts}`\n📉 {loser.display_name}: `-{pts}`")
-    # FOOTER UPDATED: Removed Arena Tracker
-    embed.set_footer(text="Dispute Resolved")
+    embed.set_footer(text=match_info)
     await ctx.send(embed=embed)
+    
+    
+
+
 
 # --- Tournament Globals ---
 tournament_players = []  # List of member objects
@@ -831,6 +916,68 @@ async def tourney_open(ctx):
     button.callback = join_callback
     view.add_item(button)
     await ctx.send(embed=embed, view=view)
+
+# META CALC LOGIC #
+
+
+class DeckSelect(discord.ui.Select):
+    def __init__(self, match_id, player_id, player_name):
+        # Pulling the current meta list from your DB for the options
+        conn = sqlite3.connect(DB_NAME)
+        c = conn.cursor()
+        c.execute("SELECT name FROM archetypes")
+        decks = [row[0] for row in c.fetchall()]
+        conn.close()
+
+        options = [discord.SelectOption(label=d) for d in decks]
+        super().__init__(
+            placeholder=f"{player_name}, select your deck...",
+            min_values=1,
+            max_values=1,
+            options=options,
+            custom_id=f"select_{player_id}" # Unique ID for each player's dropdown
+        )
+        self.match_id = match_id
+        self.player_id = player_id
+
+    async def callback(self, interaction: discord.Interaction):
+        # Security: Only the assigned player can use their specific dropdown
+        if str(interaction.user.id) != str(self.player_id):
+            return await interaction.response.send_message("This isn't your menu!", ephemeral=True)
+        
+        selected_deck = self.values[0]
+        
+        conn = sqlite3.connect(DB_NAME)
+        c = conn.cursor()
+        
+        # Determine if they are P1 or P2 in this match
+        c.execute("SELECT p1_id FROM matches WHERE id = ?", (self.match_id,))
+        p1_id = c.fetchone()[0]
+        
+        column = "p1_deck" if str(interaction.user.id) == p1_id else "p2_deck"
+        
+        # Save choice to DB
+        c.execute(f"UPDATE matches SET {column} = ? WHERE id = ?", (selected_deck, self.match_id))
+        conn.commit()
+        
+        # Check if BOTH players have selected now
+        c.execute("SELECT p1_deck, p2_deck FROM matches WHERE id = ?", (self.match_id,))
+        p1_d, p2_d = c.fetchone()
+        conn.close()
+
+        await interaction.response.send_message(f"✅ {interaction.user.display_name} locked in **{selected_deck}**!", ephemeral=False)
+
+        # If both decks are in, authorize the match
+        if p1_d and p2_d:
+            await interaction.channel.send(f"⚔️ **MATCH AUTHORIZED** ⚔️\n**{p1_d}** vs **{p2_d}**\n*Go to your stations!*")
+            # You can also trigger a message to clear the view here if you want
+
+class MatchView(discord.ui.View):
+    def __init__(self, match_id, p1, p2):
+        super().__init__(timeout=None) # No timeout so the menu doesn't die
+        self.add_item(DeckSelect(match_id, p1.id, p1.display_name))
+        self.add_item(DeckSelect(match_id, p2.id, p2.display_name))
+        
 
 @bot.command()
 @commands.has_permissions(manage_messages=True)
