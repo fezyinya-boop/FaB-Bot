@@ -1047,7 +1047,7 @@ tournament_active = False
 tournament_bracket = []  # List of match dictionaries
 
 
-@bot.command(aliases=['payouts', 'tourney']) # 'rules' alias removed to fix the crash
+@bot.command(aliases=['payouts', 'tourney']) # 'rules' alias removed to prevent crash
 async def tourny_rules(ctx):
     """Displays the official Cash App tournament and payout rules."""
     embed = discord.Embed(
@@ -1059,34 +1059,37 @@ async def tourny_rules(ctx):
         color=0x00D632 # Cash App Green
     )
 
-    # NEW: The Registration Process Field
+    # --- THE REGISTRATION PROCESS ---
     embed.add_field(
-        name="📝 HOW TO REGISTER FOR PAYOUTS",
+        name="📝 HOW TO GET PAID (REQUIRED)",
         value=(
             "To receive your prize, you must link your Cash App handle to your profile:\n"
-            "1. Use the command: `!register $YourTag` (e.g., `!register $ArchiveKing`)\n"
-            "2. This information is **private** and only visible to Moderators.\n"
-            "3. You only need to do this once unless your Cashtag changes."
+            "1. Type **`!register $YourTag`** (e.g., `!register $ArchiveKing`).\n"
+            "2. This handle is stored **privately**; only Moderators can see it.\n"
+            "3. You only need to do this once. Use the command again to update it."
         ),
         inline=False
     )
 
+    # --- PAYOUT RULES ---
     embed.add_field(
         name="📲 CASH APP PAYOUTS",
         value=(
-            "• **Accuracy:** Ensure your $Cashtag is correct. We are not responsible for "
+            "• **Accuracy:** Double-check your $Cashtag! We are not responsible for "
             "funds sent to the wrong user due to typos in your registration.\n"
-            "• **Claim Window:** Winners must have a tag registered within 24 hours of "
-            "the tournament ending or the prize is forfeited."
+            "• **Claim Window:** You must have a tag registered within 24 hours of "
+            "the tournament ending, or the prize is returned to the arena pool."
         ),
         inline=False
     )
 
+    # --- MATCH EXECUTION ---
     embed.add_field(
         name="⚔️ MATCH EXECUTION",
         value=(
-            "• **Bot Validation:** Matches must start via `!duel`.\n"
-            "• **Disputes:** Screenshots/Video are **required**. If a dispute "
+            "• **Bot Validation:** Matches must start via `!duel`. No 'off-record' games.\n"
+            "• **Reporting:** Use the bot buttons immediately after the match.\n"
+            "• **Disputes:** Screenshots/Video are **required** for proof. If a dispute "
             "occurs, a <@&" + str(MOD_ROLE_ID) + "> will review and `!settle` it."
         ),
         inline=False
@@ -1094,6 +1097,7 @@ async def tourny_rules(ctx):
 
     embed.set_footer(text="Archive Arena • Secure Payout System")
     await ctx.send(embed=embed)
+    
     
 
 @bot.command()
