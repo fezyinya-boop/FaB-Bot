@@ -442,35 +442,38 @@ async def fix_database(ctx):
 @bot.command()
 @commands.has_permissions(administrator=True)
 async def sync_rpg(ctx):
+    """Syncs the database to the latest RPG version (removes class, adds history/streak)."""
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
     try:
-        # 1. Create the Profiles table for !setprofile and !profile
+        # 1. Create Profiles table (Standard RPG fields only)
         c.execute('''CREATE TABLE IF NOT EXISTS profiles 
                      (user_id TEXT PRIMARY KEY, 
                       title TEXT DEFAULT 'Aspirant', 
                       signature_move TEXT DEFAULT 'None', 
-                      class_name TEXT DEFAULT 'Freelancer', 
                       embed_color TEXT)''')
         
-        # 2. Add 'streak' to users if missing
-        try:
-            c.execute("ALTER TABLE users ADD COLUMN streak INTEGER DEFAULT 0")
-        except:
-            pass 
+        # 2. Add missing columns to 'users' table safely
+        # We fetch the current columns to avoid "duplicate column" errors
+        c.execute("PRAGMA table_info(users)")
+        existing_columns = [column[1] for column in c.fetchall()]
 
-        # 3. Add 'history' to users if missing
-        try:
+        if 'streak' not in existing_columns:
+            c.execute("ALTER TABLE users ADD COLUMN streak INTEGER DEFAULT 0")
+            print("Added 'streak' column.")
+
+        if 'history' not in existing_columns:
             c.execute("ALTER TABLE users ADD COLUMN history TEXT DEFAULT ''")
-        except:
-            pass
+            print("Added 'history' column.")
             
         conn.commit()
-        await ctx.send("✅ **RPG System Initialized!** The `profiles` table is now active and stats are synced.")
+        await ctx.send("✅ **Database Sync Complete!**\n- `profiles` table verified.\n- `streak` & `history` columns verified.\n- Legacy `class` field ignored.")
+    
     except Exception as e:
-        await ctx.send(f"❌ Database Sync Error: {e}")
+        await ctx.send(f"❌ **Sync Error:** `{e}`")
     finally:
         conn.close()
+
         
         
 
@@ -576,8 +579,11 @@ async def history(ctx, member: discord.Member = None):
     member = member or ctx.author
     data = get_or_create_user(member.id, member.display_name)
     raw_hist = data[6].split(",") if data[6] else []
-    if not raw_hist: return await ctx.send(f"No match history for {member.display_name}.")
     
+    if not raw_hist: 
+        return await ctx.send(f"No match history for {member.display_name}.")
+    
+    # --- FIXED INDENTATION START ---
         display = ""
     for entry in reversed(raw_hist):
         parts = entry.split(":")
@@ -586,22 +592,22 @@ async def history(ctx, member: discord.Member = None):
         if len(parts) >= 3: 
             res, opp, rp = parts[0], parts[1], parts[2]
             circle = "🟢" if res == "W" else "🔴"
-            display += f"{circle} **{res}** vs {opp} (`+{rp} RP` if res == 'W' else `-{rp} RP`)\n"
+            # Logic for the prefix (+ or -)
+            prefix = "+" if res == "W" else "-"
+            display += f"{circle} **{res}** vs {opp} (`{prefix}{rp} RP`)\n"
             
-        # Fallback for old/legacy entries that might only be "W" or "L"
+        # Fallback for old/legacy entries
         elif len(parts) == 1 and parts[0]: 
             res = parts[0]
             circle = "🟢" if res == "W" else "🔴"
             display += f"{circle} **{res}** (Legacy Match)\n"
 
-    # Final safety check so the embed isn't empty
     if not display:
         display = "No recent matches recorded."
 
-
+    # --- FIXED INDENTATION END ---
 
     embed = discord.Embed(title=f"📜 {member.display_name}'s History", description=display, color=0x3498db)
-    # FOOTER UPDATED: Removed Arena Tracker
     embed.set_footer(text="Last 10 Matches")
     await ctx.send(embed=embed)
 
