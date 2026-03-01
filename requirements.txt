@@ -5,3 +5,5 @@ requests
 flask
 flask-cors
 gunicorn
+pandas
+tabulate
