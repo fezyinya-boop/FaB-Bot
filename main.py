@@ -1055,7 +1055,8 @@ async def payout_info_launcher(ctx):
     embed.add_field(
         name="📝 HOW TO LINK YOUR CASH APP",
         value=(
-            "To get paid, you must link your handle to our internal database:\n"
+            "To get paid, you must link your cashtag handle to our internal database, users can wipe thier data
+            with !unregister at anytime:\n"
             "1. Type **`!register $YourTag`** (e.g., `!register $ArchiveKing`).\n"
             "2. **PRIVACY LOCK:** Your $Cashtag is **NOT** visible on your public `!profile` card.\n"
             "3. **STAFF ONLY:** Only authorized Moderators can view your tag for prize distribution."
@@ -1075,11 +1076,11 @@ async def payout_info_launcher(ctx):
 
     embed.add_field(
         name="⚖️ DISPUTES",
-        value=f"Screenshots are required. A <@&{MOD_ROLE_ID}> will `!settle` any conflicts.",
+        value=f"Screenshots or screen recordings are required of a finalized game state . A <@&{MOD_ROLE_ID}> will `!settle` any conflicts.",
         inline=False
     )
 
-    embed.set_footer(text="Archive Arena • Secure Internal Payouts")
+    embed.set_footer(text="Archive Arena • Payout System")
     await ctx.send(embed=embed)
     
     
