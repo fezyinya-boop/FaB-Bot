@@ -137,7 +137,7 @@
         .pos {
             font-family: 'JetBrains Mono', monospace;
             font-size: 0.75rem;
-            color: #ffffff;
+            color: #ffffff !important;
             min-width: 25px;
         }
 
@@ -146,7 +146,7 @@
             font-size: 1.3rem;
             text-transform: uppercase;
             white-space: nowrap;
-            overflow: hidden;
+            overflow: hidden; 
             text-overflow: ellipsis;
         }
 
@@ -167,9 +167,12 @@
         .emblem {
             width: 40px;
             height: 40px;
-            object-fit: contain;
-            filter: grayscale(1) brightness(2.5);
-        }
+            vertical-align: middle;
+    /* This is the magic line to stop it from being white/grey */
+            filter: none !important; 
+            -webkit-filter: none !important; 
+            opacity: 1 !important;
+      }
 
         .lb-row:hover .emblem {
             filter: grayscale(0) brightness(1);
