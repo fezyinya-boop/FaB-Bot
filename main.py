@@ -442,39 +442,31 @@ async def fix_database(ctx):
 @bot.command()
 @commands.has_permissions(administrator=True)
 async def sync_rpg(ctx):
-    """Syncs the database to the latest RPG version (removes class, adds history/streak)."""
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
     try:
-        # 1. Create Profiles table (Standard RPG fields only)
+        # Create profiles table without class_name
         c.execute('''CREATE TABLE IF NOT EXISTS profiles 
                      (user_id TEXT PRIMARY KEY, 
                       title TEXT DEFAULT 'Aspirant', 
                       signature_move TEXT DEFAULT 'None', 
                       embed_color TEXT)''')
         
-        # 2. Add missing columns to 'users' table safely
-        # We fetch the current columns to avoid "duplicate column" errors
+        # Safely add columns to users if they are missing
         c.execute("PRAGMA table_info(users)")
-        existing_columns = [column[1] for column in c.fetchall()]
-
-        if 'streak' not in existing_columns:
+        cols = [column[1] for column in c.fetchall()]
+        
+        if 'streak' not in cols:
             c.execute("ALTER TABLE users ADD COLUMN streak INTEGER DEFAULT 0")
-            print("Added 'streak' column.")
-
-        if 'history' not in existing_columns:
+        if 'history' not in cols:
             c.execute("ALTER TABLE users ADD COLUMN history TEXT DEFAULT ''")
-            print("Added 'history' column.")
             
         conn.commit()
-        await ctx.send("✅ **Database Sync Complete!**\n- `profiles` table verified.\n- `streak` & `history` columns verified.\n- Legacy `class` field ignored.")
-    
+        await ctx.send("✅ **Database Sync Success!** Columns verified and RPG table active.")
     except Exception as e:
-        await ctx.send(f"❌ **Sync Error:** `{e}`")
+        await ctx.send(f"❌ Database Sync Error: {e}")
     finally:
         conn.close()
-
-        
         
 
 @bot.command()
@@ -584,7 +576,7 @@ async def history(ctx, member: discord.Member = None):
         return await ctx.send(f"No match history for {member.display_name}.")
     
     # --- FIXED INDENTATION START ---
-        display = ""
+    display = ""
     for entry in reversed(raw_hist):
         parts = entry.split(":")
         
@@ -604,7 +596,7 @@ async def history(ctx, member: discord.Member = None):
 
     if not display:
         display = "No recent matches recorded."
-
+        
     # --- FIXED INDENTATION END ---
 
     embed = discord.Embed(title=f"📜 {member.display_name}'s History", description=display, color=0x3498db)
