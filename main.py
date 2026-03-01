@@ -19,17 +19,32 @@ DB_NAME = os.getenv("DB_PATH", "arena_tracker.db")
 
 def init_db():
     global DB_NAME
-    # 1. Identify the directory path
+    # 1. Handle directory creation for Railway Volumes
     db_dir = os.path.dirname(DB_NAME)
-    
-    # 2. Handle directory creation if a path is provided
     if db_dir and not os.path.exists(db_dir):
         try:
             os.makedirs(db_dir)
-            print(f"Created directory: {db_dir}")
+            print(f"✅ Created directory: {db_dir}")
         except OSError:
-            print(f"Directory {db_dir} could not be created. Falling back.")
+            print(f"⚠️ Directory {db_dir} could not be created. Falling back to local.")
             DB_NAME = "arena_tracker.db"
+
+    # 2. Connect and Create Tables
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+    
+    # User Statistics Table
+    c.execute('''CREATE TABLE IF NOT EXISTS users 
+                 (user_id TEXT PRIMARY KEY, name TEXT, points INTEGER, 
+                  wins INTEGER, losses INTEGER, streak INTEGER, history TEXT)''')
+    
+    # Leaderboard Configuration Table (Crucial for the auto-update feature)
+    c.execute('''CREATE TABLE IF NOT EXISTS config (key TEXT PRIMARY KEY, value TEXT)''')
+    
+    conn.commit()
+    conn.close()
+    print(f"🚀 Database initialized and tables verified at: {DB_NAME}")
+
 
     # 3. Connect and create tables
     conn = sqlite3.connect(DB_NAME)
@@ -401,6 +416,59 @@ async def history(ctx, member: discord.Member = None):
     embed.set_footer(text="Last 10 Matches")
     await ctx.send(embed=embed)
 
+async def refresh_leaderboard(guild):
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+    
+    # 1. Pull Top 10 from DB
+    c.execute("SELECT name, points, wins, losses FROM users ORDER BY points DESC LIMIT 10")
+    top_players = c.fetchall()
+    
+    # 2. Check if we already have a pinned message ID
+    c.execute("SELECT value FROM config WHERE key = 'leaderboard_msg_id'")
+    row = c.fetchone()
+    saved_msg_id = int(row[0]) if row else None
+    conn.close()
+
+    # 3. Build the Visuals
+    embed = discord.Embed(title="⚔️ ARCHIVE ARENA: TOP 10", color=0xFFD700)
+    desc = ""
+    for i, (name, pts, wins, losses) in enumerate(top_players, 1):
+        medal = "🥇" if i == 1 else "🥈" if i == 2 else "🥉" if i == 3 else "🔹"
+        desc += f"{medal} **{name}** — `{pts} RP` ({wins}W-{losses}L)\n"
+    
+    embed.description = desc or "The arena is currently empty."
+    embed.set_footer(text="Updates automatically after matches | !rank")
+
+    # 4. Get the Channel (Using your Rails Variable)
+    channel = guild.get_channel(LEADERBOARD_CHANNEL_ID)
+    if not channel:
+        return print(f"Couldn't find channel {LEADERBOARD_CHANNEL_ID}")
+
+    try:
+        if saved_msg_id:
+            # Edit the existing message
+            msg = await channel.fetch_message(saved_msg_id)
+            await msg.edit(embed=embed)
+        else:
+            # First time setup: Send and save the ID
+            new_msg = await channel.send(embed=embed)
+            conn = sqlite3.connect(DB_NAME)
+            c = conn.cursor()
+            c.execute("INSERT OR REPLACE INTO config VALUES ('leaderboard_msg_id', ?)", (str(new_msg.id),))
+            conn.commit()
+            conn.close()
+    except Exception as e:
+        print(f"Leaderboard error: {e}")
+        # If the message was deleted manually, clear the ID to reset
+        conn = sqlite3.connect(DB_NAME)
+        c = conn.cursor()
+        c.execute("DELETE FROM config WHERE key = 'leaderboard_msg_id'")
+        conn.commit()
+        conn.close()
+
+    
+
 @bot.command()
 @commands.has_permissions(manage_messages=True)
 async def settle(ctx, winner: discord.Member, loser: discord.Member):
@@ -428,6 +496,7 @@ async def settle(ctx, winner: discord.Member, loser: discord.Member):
     # FOOTER UPDATED: Removed Arena Tracker
     embed.set_footer(text="Dispute Resolved")
     await ctx.send(embed=embed)
+    await refresh_leaderboard(ctx.guild)
 
 # --- Tournament Globals ---
 tournament_players = []  # List of member objects
