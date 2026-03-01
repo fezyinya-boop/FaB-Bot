@@ -1092,6 +1092,15 @@ async def payout_info(ctx):
     
 
 
+@bot.command()
+async def unregister(ctx):
+    """Wipe your $Cashtag from the database."""
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+    c.execute("UPDATE profiles SET cashtag = NULL WHERE user_id = ?", (str(ctx.author.id),))
+    conn.commit()
+    conn.close()
+    await ctx.send("🗑️ Your $Cashtag has been removed from our records.")
     
     
 
