@@ -363,29 +363,6 @@ async def ranks(ctx):
     embed.set_footer(text="Higher ranks earn more prestige in the Leaderboard!")
     
     await ctx.send(embed=embed)
-
-@bot.command()
-async def register(ctx, tag: str):
-    """Link your $Cashtag to your profile for tournament payouts."""
-    # Basic validation to ensure they include the $
-    if not tag.startswith('$'):
-        return await ctx.send("❌ Invalid format. Please include the `$` (e.g., `!register $YourName`).")
-
-    conn = sqlite3.connect(DB_NAME)
-    c = conn.cursor()
-    # Check if profile exists, if not create it
-    c.execute("INSERT OR IGNORE INTO profiles (user_id) VALUES (?)", (str(ctx.author.id),))
-    # Update the cashtag
-    c.execute("UPDATE profiles SET cashtag = ? WHERE user_id = ?", (tag, str(ctx.author.id)))
-    conn.commit()
-    conn.close()
-
-    embed = discord.Embed(
-        title="✅ REGISTRATION SUCCESSFUL",
-        description=f"Your payout handle has been set to **{tag}**.\n\n*If you ever need to change this, just run the command again.*",
-        color=0x00D632
-    )
-    await ctx.send(embed=embed)
     
 
 
@@ -1087,7 +1064,6 @@ async def payout_info_launcher(ctx):
 @bot.command()
 async def register(ctx, tag: str):
     """Links a user's Cashtag to their profile for payouts."""
-    # 1. Validation: Ensure it looks like a Cashtag
     if not tag.startswith('$'):
         return await ctx.send("❌ **Error:** Your tag must start with `$` (e.g., `!register $ArchiveKing`)")
 
@@ -1095,7 +1071,7 @@ async def register(ctx, tag: str):
     c = conn.cursor()
     
     try:
-        # 2. The "Setter": Saves the tag to the 'cashtag' column for this user
+        # This saves the 'tag' specifically into the 'cashtag' column we defined
         c.execute("""
             INSERT INTO profiles (user_id, cashtag) 
             VALUES (?, ?) 
@@ -1104,9 +1080,8 @@ async def register(ctx, tag: str):
         
         conn.commit()
         
-        # 3. Confirmation
         embed = discord.Embed(
-            title="✅ Registration Successful",
+            title="✅ REGISTRATION SUCCESSFUL",
             description=f"Your payout handle has been set to **{tag}**.",
             color=0x00D632 # Cash App Green
         )
@@ -1117,21 +1092,37 @@ async def register(ctx, tag: str):
         await ctx.send(f"⚠️ **Database Error:** {e}")
     finally:
         conn.close()
-        
+
+
+@bot.command()
+@commands.has_role(1477213439586996285) # Using your verified Mod ID
+async def payout(ctx, member: discord.Member):
+    """MOD ONLY: Pulls a user's registered $Cashtag."""
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+    c.execute("SELECT tag FROM profiles WHERE user_id = ?", (str(member.id),))
+    result = c.fetchone()
+    conn.close()
+
+    if result and result[0]:
+        await ctx.send(f"💸 **Payout Info for {member.display_name}:** `{result[0]}`")
+    else:
+        await ctx.send(f"❌ **{member.display_name}** has not registered a tag.")
+
     
     
 
 
 @bot.command()
 async def unregister(ctx):
-    """Wipe your $Cashtag from the database."""
+    """Completely wipes the user's cashtag from the database."""
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
-    c.execute("UPDATE profiles SET cashtag = NULL WHERE user_id = ?", (str(ctx.author.id),))
+    c.execute("UPDATE profiles SET tag = NULL WHERE user_id = ?", (str(ctx.author.id),))
     conn.commit()
     conn.close()
-    await ctx.send("🗑️ Your $Cashtag has been removed from our records.")
-    
+    await ctx.send("🗑️ **Data Cleared:** Your Cashtag has been removed from our system.")
+
     
 
 @bot.command()
