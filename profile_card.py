@@ -170,19 +170,7 @@ def make_profile_card(
                   font=f_prog, fill=(160, 160, 160))
         next_badge = get_rank_badge(next_rank_raw, size=badge_slot - 4)
         if next_badge:
-            card.paste(next_badge,
-                       (bar_x + bar_w + 12, bar_y + bar_h // 2 - (badge_slot - 4) // 2),
-                       next_badge)
-    else:
-        draw.text((bar_x, bar_y - 18), "MAX RANK REACHED",
-                  font=f_prog, fill=(*rank_color, 255))
-
-    buf = io.BytesIO()
-    card.save(buf, 'PNG')
-    buf.seek(0)
-    return buf
-    (+ bar_w + 12, bar_y + bar_h // 2 - (badge_slot - 4) // 2),
-                       next_badge)
+            card.paste(next_badge, (bar_x + bar_w + 12, bar_y + bar_h // 2 - (badge_slot - 4) // 2), next_badge)
     else:
         draw.text((bar_x, bar_y - 18), "MAX RANK REACHED",
                   font=f_prog, fill=(*rank_color, 255))
