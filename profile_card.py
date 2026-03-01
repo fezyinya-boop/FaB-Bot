@@ -91,6 +91,7 @@ def make_profile_card(
     rank_color: tuple,
     avatar_img: Image.Image | None = None,
 ) -> io.BytesIO:
+    print("NEW PROFILE CARD VERSION LOADED")
 
     # ------------------------------
     # BASE CANVAS
