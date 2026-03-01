@@ -934,6 +934,15 @@ async def tourney_end(ctx):
     )
     embed.set_footer(text="Dispute Resolved")
     await ctx.send(embed=embed)
+
+@bot.command()
+@commands.has_permissions(manage_messages=True)
+async def clear(ctx, amount: int = 100):
+    """Deletes a specified number of messages (default 100)."""
+    # This deletes the command message + the amount specified
+    deleted = await ctx.channel.purge(limit=amount + 1)
+    await ctx.send(f"✅ Cleared `{len(deleted)-1}` messages.", delete_after=5)
+    
     
 
 bot.run(TOKEN)
