@@ -78,11 +78,11 @@ def make_profile_card(
     draw = ImageDraw.Draw(card)
 
     # --- FONTS ---
-    f_name   = load_safe_font(48)
-    f_rank   = load_safe_font(22)
-    f_label  = load_safe_font(18)
-    f_value  = load_safe_font(28)
-    f_pts    = load_safe_font(78)
+    f_name   = load_safe_font(80)
+    f_rank   = load_safe_font(36)
+    f_label  = load_safe_font(28)
+    f_value  = load_safe_font(48)
+    f_pts    = load_safe_font(130)
     f_prog   = load_safe_font(18)
 
     # --- AVATAR ---
