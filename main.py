@@ -28,7 +28,6 @@ def init_db():
             print(f"✅ Created directory: {db_dir}")
         except OSError:
             print(f"⚠️ Directory {db_dir} could not be created. Falling back to local.")
-            # We don't change DB_NAME here to avoid path confusion later
 
     # 2. Connect and create ALL tables in one pass
     conn = sqlite3.connect(DB_NAME)
@@ -43,30 +42,18 @@ def init_db():
     c.execute('''CREATE TABLE IF NOT EXISTS config 
                  (key TEXT PRIMARY KEY, value TEXT)''')
 
-    # RPG Profile Customization
+    # RPG Profile Customization (class_name removed)
     c.execute('''CREATE TABLE IF NOT EXISTS profiles 
-                 (user_id TEXT PRIMARY KEY, title TEXT DEFAULT 'Aspirant', 
-                  signature_move TEXT DEFAULT 'None', class_name TEXT DEFAULT 'Freelancer', 
+                 (user_id TEXT PRIMARY KEY, 
+                  title TEXT DEFAULT 'Aspirant', 
+                  signature_move TEXT DEFAULT 'None', 
                   embed_color TEXT)''')
 
     conn.commit()
     conn.close()
-    print(f"🚀 Database initialized and all tables verified at: {DB_NAME}")
+    print(f"🚀 Database initialized at: {DB_NAME}")
 
-
-
-    # 3. Connect and create tables
-    conn = sqlite3.connect(DB_NAME)
-    c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS users
-                 (user_id TEXT PRIMARY KEY, name TEXT, points INTEGER, 
-                  wins INTEGER, losses INTEGER, streak INTEGER, history TEXT)''')
-    c.execute('''CREATE TABLE IF NOT EXISTS profiles
-                 (user_id TEXT PRIMARY KEY, bio TEXT, title TEXT, 
-                  main_char TEXT, favorite_move TEXT, is_premium INTEGER DEFAULT 0)''')
-    conn.commit()
-    conn.close()
-    print(f"Database active at: {DB_NAME}")
+    
 
     
 
@@ -95,11 +82,19 @@ def get_or_create_user(user_id, name):
 def update_user_stats(u_id, pts, wins, losses, streak, history):
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
+    
+    # Logic Fix: If history is somehow still a string, turn it into a list
+    if isinstance(history, str):
+        history = history.split(",") if history else []
+        
+    # Keep only the last 10 matches to prevent the DB cell from getting too huge
     hist_str = ",".join(history[-10:])
+    
     c.execute("UPDATE users SET points=?, wins=?, losses=?, streak=?, history=? WHERE user_id=?",
               (pts, wins, losses, streak, hist_str, str(u_id)))
     conn.commit()
     conn.close()
+
 
 # --- Utility Functions ---
 def get_rank_info(points):
