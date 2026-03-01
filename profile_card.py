@@ -1,3 +1,4 @@
+from PIL import Image, ImageDraw, ImageFont
 import aiohttp
 import io
 import os
