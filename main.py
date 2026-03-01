@@ -464,7 +464,6 @@ async def on_ready():
         name="Arena Tracker is Online"
     ))
 
-@bot.command(aliases=['payouts']) # Removed 'rules' from here
 
     
 
