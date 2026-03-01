@@ -5,7 +5,6 @@ import os
 import asyncio
 import math
 import random
-import fetch_avatar
 from profile_card import make_profile_card
 
 # --- Config & Secrets ---
