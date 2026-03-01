@@ -1176,13 +1176,41 @@ def run():
     # Railway uses port 8080 by default
     app.run(host='0.0.0.0', port=8080)
 
-def keep_alive():
-    t = Thread(target=run)
-    t.start()
 
+# --- 1. Flask App Initialization ---
+app = Flask(__name__)
+CORS(app)
+
+# --- 2. The Health Check Route (Required by Railway) ---
 @app.route('/')
 def home():
-    return "Bot is running!"
-    
+    # This prevents the "Website Offline" error by giving Railway a success signal
+    return "Arena Tracker API is Online"
+
+@app.route('/api/leaderboard')
+def get_leaderboard():
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+    c.execute("SELECT name, points, wins, losses, streak FROM users ORDER BY points DESC LIMIT 50")
+    data = [{"name": r[0], "points": r[1], "wins": r[2], "losses": r[3], "streak": r[4]} for r in c.fetchall()]
+    conn.close()
+    return jsonify(data)
+
+# --- 3. The Run Function with Dynamic Port ---
+def run():
+    # Railway assigns a random port; this line fetches it automatically
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host='0.0.0.0', port=port)
+
+# --- 4. The Keep Alive Thread ---
+def keep_alive():
+    t = Thread(target=run)
+    t.daemon = True # This ensures the thread dies if the bot crashes
+    t.start()
+
+# --- 5. Main Execution Block ---
+if __name__ == "__main__":
+    init_db()      # Initialize your SQLite tables
+    keep_alive()   # Start the website thread
 
 bot.run(TOKEN)
