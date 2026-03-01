@@ -181,7 +181,7 @@ def make_profile_card(
     card.save(buf, 'PNG')
     buf.seek(0)
     return buf
- + bar_w + 12, bar_y + bar_h // 2 - (badge_slot - 4) // 2),
+    (+ bar_w + 12, bar_y + bar_h // 2 - (badge_slot - 4) // 2),
                        next_badge)
     else:
         draw.text((bar_x, bar_y - 18), "MAX RANK REACHED",
