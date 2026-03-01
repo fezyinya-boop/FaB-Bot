@@ -334,8 +334,6 @@ async def setprofile(ctx, field: str, *, value: str):
     conn.close()
     
     await ctx.send(f"✅ Your **{field}** has been updated to: `{value}`")
-    
-(name="📜 Title", value=f"*{p_title}*", inline=True)
 
 
 @bot.command()
