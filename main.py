@@ -81,7 +81,9 @@ async def update_player_role(member, points):
         await member.remove_roles(*to_remove)
         await member.add_roles(role)
 
-bot = commands.Bot(command_prefix="!")
+intents = discord.Intents.default()
+intents.message_content = True
+bot = commands.Bot(command_prefix="!", intents=intents)
 
 @bot.command()
 async def ranks(ctx):
