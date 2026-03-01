@@ -54,12 +54,12 @@ def make_profile_card(
     draw = ImageDraw.Draw(card)
 
     #FONTS#
-f_name   = load_safe_font(60)   # Display name
-f_rank   = load_safe_font(28)   # Rank & title
-f_label  = load_safe_font(20)   # "RATING", "STREAK", etc.
-f_value  = load_safe_font(36)   # Values for record, streak, etc.
-f_pts    = load_safe_font(90)   # Main RP rating
-f_prog   = load_safe_font(18)   # Progress bar text
+    f_name   = load_safe_font(60)   # Display name
+    f_rank   = load_safe_font(28)   # Rank & title
+    f_label  = load_safe_font(20)   # "RATING", "STREAK", etc.
+    f_value  = load_safe_font(36)   # Values for record, streak, etc.
+    f_pts    = load_safe_font(90)   # Main RP rating
+    f_prog   = load_safe_font(18)   # Progress bar text
 
     # --- Avatar ---
     av_size = 180
