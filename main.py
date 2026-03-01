@@ -685,61 +685,45 @@ async def history(ctx, member: discord.Member = None):
     await ctx.send(embed=embed)
 
 async def refresh_leaderboard(guild):
-    """
-    Refreshes both the Text Embed and the Visual Website Screenshot.
-    """
     channel = guild.get_channel(LEADERBOARD_CHANNEL_ID)
-    if not channel:
-        print("⚠️ Leaderboard channel not found.")
-        return
+    if not channel: return
 
-    # --- PART 1: DATABASE & DATA PREP ---
+    # 1. Fetch data from your local DB
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
-    
-    # Fetch Top 10 for the Text Embed
     c.execute("SELECT name, points, streak FROM users ORDER BY points DESC LIMIT 10")
     top_players = c.fetchall()
     
-    # Get the saved message IDs from config
+    # Get the saved message ID to edit it
     c.execute("SELECT value FROM config WHERE key = 'leaderboard_msg_id'")
-    row_text = c.fetchone()
-    saved_text_id = int(row_text[0]) if row_text else None
-
-    c.execute("SELECT value FROM config WHERE key = 'visual_lb_msg_id'")
-    row_visual = c.fetchone()
-    saved_visual_id = int(row_visual[0]) if row_visual else None
+    row = c.fetchone()
+    saved_msg_id = int(row[0]) if row else None
     conn.close()
 
-    # --- PART 2: UPDATE TEXT EMBED (LITE VERSION) ---
+    # 2. Build a high-quality Text Embed
     embed = discord.Embed(title="⚔️ ARCHIVE ARENA: TOP 10", color=0xFFD700)
-    lb_text = ""
+    description = ""
     for i, (name, pts, streak) in enumerate(top_players, 1):
-        emblem = "💀"
-        for rank in reversed(RANKS):
-            if pts >= rank['min']:
-                emblem = rank['name'].split(' ')[0]
-                break
-        flare = " 🔥" if streak >= 3 else ""
-        lb_text += f"**{i}.** {emblem} **{name}**{flare} — `{pts} RP`\n"
+        medal = "🥇" if i == 1 else "🥈" if i == 2 else "🥉" if i == 3 else "💀"
+        fire = "🔥" if streak >= 3 else ""
+        description += f"{medal} **{name}** {fire} — `{pts} RP`\n"
+    
+    embed.description = description or "The arena is silent..."
+    embed.set_footer(text="Updates live | View full ranks at your-link.com")
 
-    embed.description = lb_text or "The arena is silent..."
-    embed.set_footer(text="Updates automatically | Use !rank to see your progress")
-
-    try:
-        if saved_text_id:
-            msg = await channel.fetch_message(saved_text_id)
+    # 3. Update the existing message
+    if saved_msg_id:
+        try:
+            msg = await channel.fetch_message(saved_msg_id)
             await msg.edit(embed=embed)
-        else:
-            new_text_msg = await channel.send(embed=embed)
-            # Save ID to DB
-            conn = sqlite3.connect(DB_NAME)
-            c = conn.cursor()
-            c.execute("INSERT OR REPLACE INTO config VALUES ('leaderboard_msg_id', ?)", (str(new_text_msg.id),))
-            conn.commit()
-            conn.close()
-    except Exception as e:
-        print(f"Error updating text LB: {e}")
+        except:
+            new_msg = await channel.send(embed=embed)
+            # Update ID in DB
+            # (Insert SQL update here)
+    else:
+        new_msg = await channel.send(embed=embed)
+        # (Insert SQL save here)
+        
 
     # --- PART 3: UPDATE VISUAL SCREENSHOT (WEBSITE VERSION) ---
     # Update this URL to your actual Railway public domain
