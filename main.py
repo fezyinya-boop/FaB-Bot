@@ -366,24 +366,37 @@ class ChallengeView(discord.ui.View):
 # --- Commands ---
 bot = commands.Bot(command_prefix='!', intents=discord.Intents.all())
 
-    
 @bot.command(name="intro")
 @commands.has_permissions(administrator=True)
 async def intro(ctx):
     """Generates the official Arena Archive landing page."""
+    
+    # --- INTERNAL LOGIC (Keeps the command from crashing) ---
+    MATCHMAKING_CHANNEL_ID = 1477881887601983669 
+    LEADERBOARD_URL = "https://fezyinya-boop.github.io/Arena-Tracker/"
+    
+    try:
+        conn = sqlite3.connect(DB_NAME)
+        c = conn.cursor()
+        c.execute("SELECT COUNT(*) FROM matches WHERE status = 'completed'")
+        total_matches = c.fetchone()[0]
+        conn.close()
+    except Exception:
+        total_matches = 0
+
+    # --- THE EMBED (Your exact text/formatting) ---
     embed = discord.Embed(
         title="🏛️ WELCOME TO ARCHIVE ARENA",
         description=(
             "The definitive home for online competitive Grand Archive play. Be a sweat and "
             "climb the tiers, or sling a rouge deck for fun, its up to you.\n\n"
             "This server is powered by a custom **Arena Tracker Agent** "
-            "that monitors every match, calculates Elo (RP), and tracks the global meta."
+            "that monitors every match, calculates Elo (RP), and tracks the global meta. "
             "Automated Tournaments, Cash Prizes, and more"
         ),
         color=0x2b2d31 # Sleek Dark Grey
     )
 
-    # Progression Section
     progression = (
         f"<:Diamond:1477427100666433572> **DIAMOND** — `1800+ RP`\n"
         f"<:Platinum:1477426802317201411> **PLATINUM** — `1600 RP`\n"
@@ -393,14 +406,6 @@ async def intro(ctx):
     )
     embed.add_field(name="🏆 THE PATH TO CHAMPION", value=progression, inline=False)
 
-    # Instructions Section
-    steps = (
-        "1️⃣ **View Your Stats:** Type `!rank` to see your current standing.\n"
-        "2️⃣ **Check the Meta:** Type `!decklist` to see Matchup Matrixes.\n"
-        "3️⃣ **Challenge:** Use `!challenge or !duel @user and earn RP`."
-    )
-
-    # 2. Arena Rules
     rules = (
         "⚖️ **Fair Play:** Respect your opponents. Salt belongs in the ocean, not the Arena.\n"
         "📊 **Elo System:** Beating high ranks gains more RP. Losing to lower ranks drops more RP.\n"
@@ -408,7 +413,6 @@ async def intro(ctx):
     )
     embed.add_field(name="📜 ARENA GUIDELINES", value=rules, inline=False)
 
-    # 3. Matchmaking 101
     matchmaking = (
         f"• Head over to <#{MATCHMAKING_CHANNEL_ID}>\n"
         "• Use `!challenge @user` to initiate a duel.\n"
@@ -416,19 +420,16 @@ async def intro(ctx):
     )
     embed.add_field(name="⚔️ MATCHMAKING 101", value=matchmaking, inline=False)
 
-    # Footer with Live Stats
     embed.set_footer(text=f"Arena Agent v3.0 • {total_matches} matches recorded • Data stays forever")
 
-    # Action Buttons
+    # --- THE INTERACTIVE BUTTONS ---
     view = discord.ui.View()
-    # Button 1: External Website (The Link you provided)
     view.add_item(discord.ui.Button(
         label="View Global Rankings", 
         url=LEADERBOARD_URL, 
         style=discord.ButtonStyle.link,
         emoji="🌐"
     ))
-    # Button 2: Internal Jump
     view.add_item(discord.ui.Button(
         label="Jump to Matchmaking", 
         url=f"https://discord.com/channels/{ctx.guild.id}/{MATCHMAKING_CHANNEL_ID}", 
@@ -438,17 +439,6 @@ async def intro(ctx):
 
     await ctx.send(embed=embed, view=view)
     
-    
-    embed.add_field(name="⚔️ START YOUR JOURNEY", value=steps, inline=False)
-
-    embed.set_footer(text="Archive Arena Agent • Version 3.0 • Automated Elo Enabled")
-    
-    # Optional: Add a high-res image if you have a server banner
-    # embed.set_image(url="YOUR_BANNER_URL_HERE")
-
-    await ctx.send(embed=embed)
-    # Delete the trigger message to keep the channel clean
-    await ctx.message.delete()
 
 
 @bot.command()
