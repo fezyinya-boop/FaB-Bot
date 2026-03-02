@@ -383,17 +383,19 @@ class MatchView(discord.ui.View):
 
 class OpenMatchView(discord.ui.View):
     def __init__(self, challenger):
+        # 10 minute timeout for the lobby to stay active
         super().__init__(timeout=600)
         self.challenger = challenger
 
     @discord.ui.button(label="Join Match", style=discord.ButtonStyle.success, emoji="🎮")
     async def join(self, interaction: discord.Interaction, button: discord.ui.Button):
+        # Prevent the creator from joining their own match
         if interaction.user.id == self.challenger.id:
-            return await interaction.response.send_message("You can't join your own match!", ephemeral=True)
+            return await interaction.response.send_message("You can't join your own lobby!", ephemeral=True)
 
         opponent = interaction.user
         
-        # Create the match in your DB (using your DB_NAME variable)
+        # Create match entry in SQLite using your existing DB_NAME variable
         conn = sqlite3.connect(DB_NAME)
         c = conn.cursor()
         c.execute("INSERT INTO matches (p1_id, p2_id, status) VALUES (?, ?, 'active')", 
@@ -402,16 +404,26 @@ class OpenMatchView(discord.ui.View):
         conn.commit()
         conn.close()
 
-        # Switch to the reporting UI (Standardizing with your existing code)
+        # Build the starting embed
         embed = discord.Embed(
             title="⚔️ MATCH STARTING",
-            description=f"Match found! **{self.challenger.display_name}** vs **{opponent.display_name}**.",
+            description=(f"A challenger has appeared!\n\n"
+                         f"**Challenger:** {self.challenger.mention}\n"
+                         f"**Opponent:** {opponent.mention}"),
             color=0x3498db
         )
         
-        # This reuses the MatchReportingView already in your main.py
+        # Reuse your existing MatchReportingView and DeckSelect from main.py
         view = MatchReportingView(self.challenger, opponent, match_id)
-        await interaction.response.edit_message(content=None, embed=embed, view=view)
+        view.add_item(DeckSelect(match_id, self.challenger.id, self.challenger.display_name))
+        view.add_item(DeckSelect(match_id, opponent.id, opponent.display_name))
+        
+        # This 'content' line is what triggers the notification ping for the original poster
+        await interaction.response.edit_message(
+            content=f"🔔 {self.challenger.mention}, your match against {opponent.mention} is starting!", 
+            embed=embed, 
+            view=view
+        )
         
 
 
@@ -957,10 +969,10 @@ async def match(ctx):
     view = OpenMatchView(ctx.author)
     embed = discord.Embed(
         title="🏟️ OPEN LOBBY",
-        description=f"**{ctx.author.display_name}** is looking for an opponent!\nClick the button below to play.",
+        description=f"**{ctx.author.display_name}** is looking for an opponent!\nClick the button below to join the arena.",
         color=0x2ecc71
     )
-    embed.set_footer(text="This lobby expires in 10 minutes.")
+    embed.set_footer(text="This lobby will expire in 10 minutes.")
     await ctx.send(embed=embed, view=view)
     
 
