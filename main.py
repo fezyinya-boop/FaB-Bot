@@ -79,7 +79,6 @@ def init_db():
 
     # 4. Optional: Pre-populate with current GA Meta
     meta_decks = [('Rai', 'S'), ('Silvie', 'S'), ('Lorraine', 'A'), ('Mordred', 'A')]
-    c.executemany("INSERT OR IGNORE INTO archetypes (name, tier) VALUES (?, ?)", meta_decks)
 
     conn.commit()
     conn.close()
@@ -109,6 +108,9 @@ def get_or_create_user(user_id, name):
         user = (str(user_id), name, 1000, 0, 0, 0, "")
         c.execute("INSERT INTO users VALUES (?, ?, ?, ?, ?, ?, ?)", user)
         conn.commit()
+    else:
+        if user[1] != name:
+            c.execute("UPDATE users SET name=? WHERE user_id=?", (name, str(user_id)))   
     conn.close()
     return user
 
@@ -423,14 +425,14 @@ async def meta(ctx):
 async def leaderboard(ctx):
     # This just triggers the same refresh logic manually
     await refresh_leaderboard(ctx.guild)
-    await ctx.send("✅ Leaderboard refreshed/posted in the designated channel!")
+    await ctx.send("✅ Leaderboard refreshed!")
     
     
 @bot.event
 async def on_ready():
     # Run the overhaul immediately on startup
     init_db()
-    
+    keep_alive()
     # Sync commands for Slash Commands/Buttons
     try:
         await bot.tree.sync()
@@ -447,7 +449,6 @@ async def on_ready():
     ))
 
 
-    
 
 @bot.command()
 @commands.has_permissions(administrator=True)
@@ -625,7 +626,7 @@ async def profile(ctx, member: discord.Member = None):
     p_title, p_move, p_color, p_cashtag = bio
 
     r_info = get_rank_info(pts)
-    rank_emoji = r_info['name'].split(' ')[0]
+    rank_emoji = r_info['emoji']
 
     next_rank = next((r for r in reversed(RANKS) if r['min'] > pts), None)
 
@@ -695,7 +696,8 @@ async def sync_rpg(ctx):
     try:
         # Create profiles table without class_name
         c.execute('''CREATE TABLE IF NOT EXISTS profiles 
-                     (user_id TEXT PRIMARY KEY, 
+                     (user_id TEXT PRIMARY KEY,
+                      cashtag TEXT,
                       title TEXT DEFAULT 'Aspirant', 
                       signature_move TEXT DEFAULT 'None', 
                       embed_color TEXT)''')
@@ -1273,7 +1275,7 @@ async def tourney_list(ctx):
         description=player_list,
         color=0x3498db
     )
-    embed.set_footer(text="Last 10 Matches")
+    embed.set_footer(text="Archive Arena")
     await ctx.send(embed=embed)
 
 @bot.command()
@@ -1304,28 +1306,6 @@ async def clear(ctx, amount: int = 100):
     # This deletes the command message + the amount specified
     deleted = await ctx.channel.purge(limit=amount + 1)
     await ctx.send(f"✅ Cleared `{len(deleted)-1}` messages.", delete_after=5)
-    
-
-app = Flask('')
-CORS(app) # This allows your website to talk to the bot
-
-@app.route('/')
-def home():
-    return "Arena API is Online"
-
-@app.route('/api/leaderboard')
-def get_leaderboard():
-    conn = sqlite3.connect(DB_NAME)
-    c = conn.cursor()
-    # Fetch top 50 for the web
-    c.execute("SELECT name, points, wins, losses, streak FROM users ORDER BY points DESC LIMIT 50")
-    data = [{"name": r[0], "points": r[1], "wins": r[2], "losses": r[3], "streak": r[4]} for r in c.fetchall()]
-    conn.close()
-    return jsonify(data)
-
-def run():
-    # Railway uses port 8080 by default
-    app.run(host='0.0.0.0', port=8080)
 
 
 # --- 1. Flask App Initialization ---
