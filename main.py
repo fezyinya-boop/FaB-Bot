@@ -339,12 +339,14 @@ class ChallengeView(discord.ui.View):
         
         await interaction.response.edit_message(content=None, embed=embed, view=view)
 
-bot.remove_command('help')
 
         
 
 # --- Commands ---
 bot = commands.Bot(command_prefix='!', intents=discord.Intents.all())
+
+bot.remove_command('help')
+
 
 @bot.command()
 async def ranks(ctx):
