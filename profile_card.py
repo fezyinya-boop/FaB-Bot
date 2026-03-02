@@ -62,7 +62,7 @@ def make_profile_card(
     card = Image.new('RGBA', (W, H), (0, 0, 0, 255))
     draw = ImageDraw.Draw(card)
 
-    # --- BACKGROUND ---
+    # --- BACKGROUND: subtle horizontal gradient ---
     for x in range(W):
         shade = int(14 * (1 - x / W))
         draw.line([(x, 0), (x, H)], fill=(shade, shade, shade, 255))
@@ -72,24 +72,28 @@ def make_profile_card(
         a = int(20 * (1 - r / 280) ** 2)
         draw.ellipse([(50 - r, H//2 - r), (50 + r, H//2 + r)], fill=(*rc, a))
 
-    # Left accent bar + soft glow
-    draw.rectangle([(0, 0), (5, H)], fill=(*rc, 255))
-    for gi in range(20, 0, -2):
-        ga = int(40 * (gi / 20) ** 2)
-        draw.rectangle([(5, 0), (5 + gi, H)], fill=(*rc, ga))
+    # --- DIAGONAL SHEEN ---
+    sheen = Image.new('RGBA', (W, H), (0, 0, 0, 0))
+    sheen_draw = ImageDraw.Draw(sheen)
+    for i in range(80):
+        alpha = int(18 * (1 - abs(i - 40) / 40))
+        sheen_draw.line([(i * 6 - H, 0), (i * 6, H)], fill=(255, 255, 255, alpha), width=3)
+    card = Image.alpha_composite(card, sheen)
+    draw = ImageDraw.Draw(card)
 
-    # Thin top/bottom edge lines
+    # Thin top/bottom edge lines only (no left bar)
     draw.line([(0, 0), (W, 0)], fill=(*rc, 60), width=1)
     draw.line([(0, H-1), (W, H-1)], fill=(*rc, 60), width=1)
 
     # --- FONTS ---
-    f_name   = load_custom_font("Orbitron-VariableFont_wght.ttf", 44)
-    f_pts    = load_custom_font("Michroma-Regular.ttf", 68)
-    f_label  = load_custom_font("Orbitron-VariableFont_wght.ttf", 20)  # big bold headers
-    f_title  = load_custom_font("Orbitron-VariableFont_wght.ttf", 22)
-    f_value  = load_custom_font("FunnelSans-Regular.ttf", 22)
-    f_prog   = load_custom_font("FunnelSans-Light.ttf", 13)
-    f_move   = load_custom_font("FunnelSans-Regular.ttf", 26)
+    f_name  = load_custom_font("Orbitron-VariableFont_wght.ttf", 44)
+    f_pts   = load_custom_font("Michroma-Regular.ttf", 68)
+    # Headers: DejaVuSans-Bold for actual bold weight
+    f_label = load_custom_font("DejaVuSans-Bold.ttf", 18)
+    f_title = load_custom_font("Orbitron-VariableFont_wght.ttf", 22)
+    f_value = load_custom_font("FunnelSans-Regular.ttf", 22)
+    f_prog  = load_custom_font("FunnelSans-Light.ttf", 13)
+    f_move  = load_custom_font("FunnelSans-Regular.ttf", 26)
 
     LABEL = (85, 85, 95)
     WHITE = (235, 232, 228)
@@ -122,7 +126,7 @@ def make_profile_card(
     )
     card.paste(av_circ, (av_x, av_y), av_circ)
 
-    # Rank badge overlapping avatar corner — no background circle, just the badge
+    # Rank badge overlapping avatar corner — no background
     badge_size = 72
     cur_badge = get_rank_badge(current_rank_raw, size=badge_size)
     if cur_badge:
@@ -136,15 +140,13 @@ def make_profile_card(
 
     # --- NAME ---
     draw.text((col_name, 38), display_name.upper(), font=f_name, fill=WHITE)
-
-    # Rank-colored underline beneath name
     try:
         name_w = draw.textlength(display_name.upper(), font=f_name)
     except:
         name_w = len(display_name) * 26
     draw.line([(col_name, 90), (col_name + int(name_w), 90)], fill=(*rc, 140), width=2)
 
-    # --- RANK · TITLE (both now Orbitron) ---
+    # --- RANK · TITLE ---
     clean_cur = clean_rank_name(current_rank_raw)
     draw.text((col_name, 100), clean_cur, font=f_title, fill=(*rc, 255))
     try:
@@ -157,29 +159,29 @@ def make_profile_card(
     # --- DIVIDER ---
     draw.line([(col_name, 140), (W - 30, 140)], fill=DIM, width=1)
 
-    # --- RATING (header bigger, no RP label) ---
+    # --- RATING ---
     draw.text((col_name, 150), "RATING", font=f_label, fill=LABEL)
-    draw.text((col_name, 168), str(pts), font=f_pts, fill=(*rc, 255))
+    draw.text((col_name, 174), str(pts), font=f_pts, fill=(*rc, 255))
 
     # --- RECORD ---
     total = wins + losses
     wr = round((wins / total) * 100) if total > 0 else 0
     draw.text((col_stats, 150), "RECORD", font=f_label, fill=LABEL)
-    draw.text((col_stats, 170), f"{wins}W – {losses}L", font=f_value, fill=WHITE)
-    draw.text((col_stats, 200), f"{wr}% win rate", font=f_prog, fill=LABEL)
+    draw.text((col_stats, 174), f"{wins}W – {losses}L", font=f_value, fill=WHITE)
+    draw.text((col_stats, 204), f"{wr}% win rate", font=f_prog, fill=LABEL)
 
     # --- STREAK ---
     streak_col = (*rc, 255) if streak >= 3 else WHITE
-    draw.text((col_stats, 248), "STREAK", font=f_label, fill=LABEL)
+    draw.text((col_stats, 252), "STREAK", font=f_label, fill=LABEL)
     streak_label = f"{streak} Wins  🔥" if streak >= 3 else f"{streak} Wins"
-    draw.text((col_stats, 268), streak_label, font=f_value, fill=streak_col)
+    draw.text((col_stats, 276), streak_label, font=f_value, fill=streak_col)
 
     # --- DIVIDER ---
     draw.line([(col_name, 325), (W - 30, 325)], fill=DIM, width=1)
 
-    # --- SIGNATURE MOVE (bigger value text) ---
+    # --- SIGNATURE MOVE ---
     draw.text((col_name, 334), "SIGNATURE MOVE", font=f_label, fill=LABEL)
-    draw.text((col_name, 355), p_move.upper(), font=f_move, fill=WHITE)
+    draw.text((col_name, 358), p_move.upper(), font=f_move, fill=WHITE)
 
     # --- PROGRESS BAR ---
     bar_x = col_name
@@ -196,21 +198,17 @@ def make_profile_card(
         draw.text((bar_x, bar_y - 18), "MAX RANK REACHED",
                   font=f_prog, fill=(*rc, 255))
 
-    # Track
     draw.rectangle([(bar_x, bar_y), (bar_x + bar_w, bar_y + bar_h)], fill=(30, 30, 35))
-    # Fill
     fill_w = int(bar_w * min(pct, 1.0))
     if fill_w > 0:
         draw.rectangle([(bar_x, bar_y), (bar_x + fill_w, bar_y + bar_h)], fill=(*rc, 255))
 
-    # Glow tip
     gx = bar_x + fill_w
     for gi in range(10, 0, -1):
         ga = int(50 * (gi / 10) ** 2)
         draw.ellipse([(gx - gi, bar_y - gi//2), (gx + gi, bar_y + bar_h + gi//2)],
                      fill=(*rc, ga))
 
-    # Next rank badge
     if next_rank_raw:
         next_badge = get_rank_badge(next_rank_raw, size=badge_slot - 4)
         if next_badge:
@@ -222,3 +220,4 @@ def make_profile_card(
     card.save(buf, 'PNG')
     buf.seek(0)
     return buf
+                  
