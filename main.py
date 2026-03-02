@@ -73,9 +73,6 @@ def init_db():
         status TEXT DEFAULT 'active',
         timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
     )""")
-    
-    # 3. Config Table for the Leaderboard Message ID
-    c.execute("CREATE TABLE IF NOT EXISTS config (key TEXT PRIMARY KEY, value TEXT)")
 
     # 4. Optional: Pre-populate with current GA Meta
     meta_decks = [('Rai', 'S'), ('Silvie', 'S'), ('Lorraine', 'A'), ('Mordred', 'A')]
@@ -111,6 +108,8 @@ def get_or_create_user(user_id, name):
     else:
         if user[1] != name:
             c.execute("UPDATE users SET name=? WHERE user_id=?", (name, str(user_id)))   
+            user = (user[0], name) + user[2:]
+    conn.commit()
     conn.close()
     return user
 
@@ -637,7 +636,7 @@ async def profile(ctx, member: discord.Member = None):
     next_rank = next((r for r in reversed(RANKS) if r['min'] > pts), None)
 
     if next_rank:
-        next_emoji = next_rank['name'].split(' ')[0]
+        next_emoji = next_rank['emoji']
         total_needed = next_rank['min'] - r_info['min']
         current_progress = pts - r_info['min']
         percent_int = min(max(int((current_progress / total_needed) * 10), 0), 10)
