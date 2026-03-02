@@ -184,8 +184,8 @@ def make_profile_card(
     f_rp     = load_custom_font("Michroma-Regular.ttf", 14)
     f_label  = load_custom_font("Michroma-Regular.ttf", 10)
     f_title  = load_custom_font("PirataOne-Regular.ttf", 28)
-    f_value  = load_custom_font("FunnelSans-Regular.ttf", 22)
-    f_prog   = load_custom_font("FunnelSans-Light.ttf", 13)
+    f_value  = load_custom_font("FunnelSans-VariableFont_wght.ttf", 22)
+    f_prog   = load_custom_font("FunnelSans-VariableFont_wght.ttf", 13)
 
     # Muted label color and white value color
     LABEL  = (90, 90, 100)
@@ -311,3 +311,4 @@ def make_profile_card(
     card.save(buf, 'PNG')
     buf.seek(0)
     return buf
+    
