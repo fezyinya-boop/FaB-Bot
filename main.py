@@ -568,47 +568,7 @@ async def cardprofile(ctx, member: discord.Member = None):
     except Exception as e:
         await ctx.send(f"❌ Failed to generate profile card: `{e}`")
 
-@bot.command(name="cmds", aliases=["list", "menu"]) 
-async def list(ctx):
-    """A polished, categorized list of all bot features."""
-    embed = discord.Embed(
-        title="⚔️ Arena Tracker | Command Directory",
-        description="Use the prefixes below to interact with the system.",
-        color=0x2b2d31 # Sleek Dark Grey
-    )
 
-    # 1. RPG & Profile Category
-    embed.add_field(
-        name="👤 Player Profile",
-        value="`!profile` - View your stats & card\n`!rank` - Check leaderboard\n`!prestige` - Reset for rewards",
-        inline=False
-    )
-
-    # 2. Combat & Games Category
-    embed.add_field(
-        name="⚔️ Combat & Games",
-        value="`!duel @user` - Challenge someone\n`!arena` - Join the global queue\n`!bet` - Wager your points",
-        inline=False
-    )
-
-    # 3. Payout & Privacy Category (The new stuff!)
-    embed.add_field(
-        name="💰 Payouts & Privacy",
-        value="`!register $tag` - Save your Cashtag\n`!unregister` - Wipe your data\n`!payout @user` - (Staff Only) View a tag",
-        inline=False
-    )
-
-    # 4. Settings & Info
-    embed.add_field(
-        name="⚙️ System",
-        value="`!ping` - Check bot latency\n`!stats` - Global bot analytics",
-        inline=False
-    )
-
-    embed.set_footer(text=f"Total Lines of Code: 1,400+ | Requested by {ctx.author.display_name}")
-    embed.set_thumbnail(url=bot.user.avatar.url)
-
-    await ctx.send(embed=embed)
     
 
     
