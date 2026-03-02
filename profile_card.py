@@ -85,13 +85,10 @@ def make_profile_card(
     # --- FONTS ---
     f_name   = load_custom_font("Orbitron-VariableFont_wght.ttf", 44)
     f_pts    = load_custom_font("Michroma-Regular.ttf", 68)
-    # Headers now use Orbitron (same as name) at a readable bold size
-    f_label  = load_custom_font("Orbitron-VariableFont_wght.ttf", 13)
-    # Rank and title now use Orbitron instead of PirataOne
+    f_label  = load_custom_font("Orbitron-VariableFont_wght.ttf", 20)  # big bold headers
     f_title  = load_custom_font("Orbitron-VariableFont_wght.ttf", 22)
     f_value  = load_custom_font("FunnelSans-Regular.ttf", 22)
     f_prog   = load_custom_font("FunnelSans-Light.ttf", 13)
-    # Bigger signature move value
     f_move   = load_custom_font("FunnelSans-Regular.ttf", 26)
 
     LABEL = (85, 85, 95)
