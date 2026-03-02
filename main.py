@@ -74,9 +74,28 @@ def init_db():
         timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
     )""")
 
-    # 4. Optional: Pre-populate with current GA Meta
-    meta_decks = [('Rai', 'S'), ('Silvie', 'S'), ('Lorraine', 'A'), ('Mordred', 'A')]
-
+# 4. Optional: Pre-populate with current GA Meta
+        meta_decks = [
+        # S Tier
+        ('Rai', 'S'),
+        ('Silvie', 'S'),
+        # A Tier
+        ('Lorraine', 'A'),
+        ('Mordred', 'A'),
+        ('Alyndra', 'A'),
+        # B Tier
+        ('Tristan', 'B'),
+        ('Diana', 'B'),
+        ('Zara', 'B'),
+        ('Kalmia', 'B'),
+        # C Tier
+        ('Lore', 'C'),
+        ('Aimee', 'C'),
+        ('Reiya', 'C'),
+        # Untiered / Rogue
+        ('Dungeon', 'Untiered'),
+    ]
+    c.executemany("INSERT OR IGNORE INTO archetypes (name, tier) VALUES (?, ?)", meta_decks)
     conn.commit()
     conn.close()
     print(f"🚀 Database initialized, Meta tracking active: {DB_NAME}")
