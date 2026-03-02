@@ -543,25 +543,31 @@ async def cardprofile(ctx, member: discord.Member = None):
     except:
         rank_color = (230, 160, 30)
 
-    avatar_img = await fetch_avatar(member.display_avatar.url)
+    try:
+        avatar_img = await fetch_avatar(member.display_avatar.url)
+    except:
+        avatar_img = None
 
-    async with ctx.typing():
-        buf = make_profile_card(
-            display_name=member.display_name,
-            p_title=p_title,
-            p_move=p_move,
-            pts=pts,
-            wins=data[3],
-            losses=data[4],
-            streak=data[5],
-            pct=pct,
-            current_rank_raw=r_info['name'],
-            next_rank_raw=next_rank_raw,
-            rank_color=rank_color,
-            avatar_img=avatar_img,
-        )
-
-    await ctx.send(file=discord.File(buf, filename='profile.png'))
+    try:
+        async with ctx.typing():
+            buf = await asyncio.to_thread(
+                make_profile_card,
+                display_name=member.display_name,
+                p_title=p_title,
+                p_move=p_move,
+                pts=pts,
+                wins=data[3],
+                losses=data[4],
+                streak=data[5],
+                pct=pct,
+                current_rank_raw=r_info['name'],
+                next_rank_raw=next_rank_raw,
+                rank_color=rank_color,
+                avatar_img=avatar_img,
+            )
+        await ctx.send(file=discord.File(buf, filename='profile.png'))
+    except Exception as e:
+        await ctx.send(f"❌ Failed to generate profile card: `{e}`")
 
 @bot.command(name="cmds", aliases=["list", "menu"]) 
 async def list(ctx):
@@ -1073,27 +1079,21 @@ async def register(ctx, tag: str):
 
 @bot.command()
 async def payout(ctx, member: discord.Member):
-    """MOD ONLY: Pulls a user's registered $Cashtag."""
-    # 1. Manual Role/Admin Check
-    is_mod = any(role.id == 1477213439586996285 for role in ctx.author.roles)
+    is_mod = any(role.id == MOD_ROLE_ID for role in ctx.author.roles)
     is_admin = ctx.author.guild_permissions.administrator
-
     if not (is_mod or is_admin):
         return await ctx.send("🚫 **Access Denied:** You need the Moderator role to use this.")
 
-    # 2. Database Lookup
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
-    
     try:
         c.execute("SELECT cashtag FROM profiles WHERE user_id = ?", (str(member.id),))
         result = c.fetchone()
-        
         if result and result[0]:
-            await ctx.send(f"💸 **Payout Info for {member.display_name}:** `{result[0]}`")
+            await ctx.author.send(f"💸 **Payout Info for {member.display_name}:** `{result[0]}`")
+            await ctx.send("✅ Payout info sent to your DMs.", delete_after=5)
         else:
             await ctx.send(f"❌ **{member.display_name}** has not registered a $Cashtag.")
-            
     except Exception as e:
         await ctx.send(f"⚠️ **Database Error:** `{e}`")
     finally:
