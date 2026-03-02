@@ -517,7 +517,8 @@ async def intro(ctx):
 
     matchmaking = (
         f"• Head over to <#{MATCHMAKING_CHANNEL_ID}>\n"
-        "• Use `!challenge @user` to initiate a duel.\n"
+        "• Use `!duel @user` to play against a specific user.\n"
+        "• Use !match to post a match anyone can join"\n"
         "• Select your decks and report results via the buttons provided."
     )
     embed.add_field(name="⚔️ MATCHMAKING 101", value=matchmaking, inline=False)
