@@ -371,12 +371,13 @@ bot = commands.Bot(command_prefix='!', intents=discord.Intents.all())
 async def intro(ctx):
     """Generates the official Arena Archive landing page."""
     embed = discord.Embed(
-        title="🏛️ WELCOME TO THE ARCHIVE ARENA",
+        title="🏛️ WELCOME TO ARCHIVE ARENA",
         description=(
-            "The definitive home for competitive play. Draft your deck, "
-            "climb the tiers, and archive your legacy.\n\n"
+            "The definitive home for online competitive Grand Archive play. Be a sweat and "
+            "climb the tiers, or sling a rouge deck for fun, its up to you.\n\n"
             "This server is powered by a custom **Arena Tracker Agent** "
             "that monitors every match, calculates Elo (RP), and tracks the global meta."
+            "Automated Tournaments, Cash Prizes, and more"
         ),
         color=0x2b2d31 # Sleek Dark Grey
     )
@@ -394,7 +395,7 @@ async def intro(ctx):
     # Instructions Section
     steps = (
         "1️⃣ **View Your Stats:** Type `!rank` to see your current standing.\n"
-        "2️⃣ **Check the Meta:** Type `!decklist` to see which archetypes are S-Tier.\n"
+        "2️⃣ **Check the Meta:** Type `!decklist` to see Matchup Matrixes.\n"
         "3️⃣ **Challenge:** Use `!challenge or !duel @user and earn RP`."
     )
     embed.add_field(name="⚔️ START YOUR JOURNEY", value=steps, inline=False)
