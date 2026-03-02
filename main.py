@@ -388,11 +388,11 @@ async def intro(ctx):
     embed = discord.Embed(
         title="🏛️ WELCOME TO ARCHIVE ARENA",
         description=(
-            "The definitive home for online competitive Grand Archive play. Be a sweat and "
+            "The definitive home for online Grand Archive play. Be a sweat and "
             "climb the tiers, or sling a rouge deck for fun, its up to you.\n\n"
             "This server is powered by a custom **Arena Tracker Agent** "
             "that monitors every match, calculates Elo (RP), and tracks the global meta. "
-            "Automated Tournaments, Cash Prizes, and more"
+            "Automated Tournaments, Cash Prizes, and more."
         ),
         color=0x2b2d31 # Sleek Dark Grey
     )
