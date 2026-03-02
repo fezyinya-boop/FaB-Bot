@@ -560,8 +560,7 @@ async def cardprofile(ctx, member: discord.Member = None):
 
     await ctx.send(file=discord.File(buf, filename='profile.png'))
 
-
-@bot.command(aliases=["help", "cmds"])
+@bot.command(name="cmds", aliases=["list", "menu"]) 
 async def list(ctx):
     """A polished, categorized list of all bot features."""
     embed = discord.Embed(
