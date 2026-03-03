@@ -375,7 +375,7 @@ def make_profile_card(
 
     draw.text((right_x, content_top + S(102)), "STREAK", font=f_lab, fill=HEADER)
     streak_col = (rc[0], rc[1], rc[2], 255) if streak >= 3 else WHITE
-    streak_label = f"{streak} Wins 🔥" if streak >= 3 else f"{streak} Wins"
+    streak_label = f"{streak} Wins " if streak >= 3 else f"{streak} Wins"
     draw.text(
     (right_x, content_top + S(130)),
     streak_label,
