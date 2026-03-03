@@ -30,8 +30,8 @@ def apply_anime_arena_background(
     saturation: float = 1.15,     # keep anime pop
     brightness: float = 0.75,     # less dark so color shows
     contrast: float = 1.05,
-    left_protect_width: float = 0.45,  # protect UI area but not too aggressive
-    left_protect_alpha: int = 140,     # lower than 200 so art still shows
+    left_protect_width: float = 0.62,  # protect UI area but not too aggressive
+    left_protect_alpha: int = 210,     # lower than 200 so art still shows
 ) -> Image.Image:
     """
     Anime-style background plate:
@@ -302,6 +302,16 @@ def make_profile_card(
     col_name = S(295)
     col_stats = S(660)
     right_pad = S(30)
+
+    panel = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    pd = ImageDraw.Draw(panel)
+    pd.rounded_rectangle(
+     (col_name - S(25), S(20), W - S(25), H - S(20)),
+     radius=S(24),
+     fill=(0, 0, 0, 90),
+)
+card = Image.alpha_composite(card, panel)
+draw = ImageDraw.Draw(card)
 
     # Fonts (fit-to-width)
     name_text = (display_name or "PLAYER").upper()
