@@ -248,15 +248,9 @@ def make_profile_card(
 
     draw = ImageDraw.Draw(card)
 
-    # Subtle left->right gradient (conditional so it doesn't wash out the background art)
-    if not bg_loaded:
-        for x in range(W):
-            shade = int(18 - 10 * (x / W))
-            draw.line([(x, 0), (x, H)], fill=(shade, shade, shade, 255))
-    else:
-        for x in range(W):
-            shade = int(10 - 6 * (x / W))
-            draw.line([(x, 0), (x, H)], fill=(shade, shade, shade, 160))
+    # Optional: ultra-light dark wash for contrast (won't kill the art)
+    card = Image.alpha_composite(card, Image.new("RGBA", (W, H), (0, 0, 0, 20)))
+    draw = ImageDraw.Draw(card)
 
     # Colors
     WHITE: RGBA = (238, 236, 232, 255)
