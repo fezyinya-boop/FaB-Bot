@@ -306,9 +306,9 @@ def make_profile_card(
     panel = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     pd = ImageDraw.Draw(panel)
     pd.rounded_rectangle(
-     (col_name - S(25), S(20), W - S(25), H - S(20)),
-     radius=S(24),
-     fill=(0, 0, 0, 90),
+    (col_name - S(25), S(20), W - S(25), H - S(20)),
+    radius=S(24),
+    fill=(0, 0, 0, 90),
 )
 card = Image.alpha_composite(card, panel)
 draw = ImageDraw.Draw(card)
