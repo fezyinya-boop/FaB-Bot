@@ -30,6 +30,8 @@ RANK_BADGES = {
     "BRONZE":   os.path.join(BADGES_DIR, "rank_bronze.png"),
 }
 
+
+
 # ----------------------------
 # Fonts (cached)
 # ----------------------------
@@ -334,28 +336,66 @@ def make_profile_card(
     # Content
     content_top = panel_pad_t + S(26)
 
-    draw.text((col_left, content_top), "RATING", font=f_lab, fill=MUTED)
-    draw.text((col_left, content_top + S(28)), str(pts), font=f_big, fill=(rc[0], rc[1], rc[2], 255), stroke_width=S(2), stroke_fill=(0, 0, 0, 160))
+# Header color (define once above this block if you haven't already)
+# HEADER = (185, 185, 200, 255)
 
-    total = wins + losses
-    wr = round((wins / total) * 100) if total > 0 else 0
+# --- RATING (left)
+draw.text((col_left, content_top), "RATING", font=f_lab, fill=HEADER)
+draw.text(
+    (col_left, content_top + S(28)),
+    str(pts),
+    font=f_big,
+    fill=(rc[0], rc[1], rc[2], 255),
+    stroke_width=S(2),
+    stroke_fill=(0, 0, 0, 160),
+)
 
-    right_x = col_mid + S(22)
-    draw.text((right_x, content_top), "RECORD", font=f_lab, fill=MUTED)
-    draw.text((right_x, content_top + S(28)), f"{wins}W – {losses}L", font=f_val, fill=WHITE, stroke_width=S(2), stroke_fill=(0, 0, 0, 150))
-    draw.text((right_x, content_top + S(62)), f"{wr}% win rate", font=f_small, fill=MUTED)
+# --- RECORD + STREAK (right)
+total = wins + losses
+wr = round((wins / total) * 100) if total > 0 else 0
 
-    draw.text((right_x, content_top + S(102)), "STREAK", font=f_lab, fill=MUTED)
-    streak_col = (rc[0], rc[1], rc[2], 255) if streak >= 3 else WHITE
-    streak_label = f"{streak} Wins 🔥" if streak >= 3 else f"{streak} Wins"
-    draw.text((right_x, content_top + S(130)), streak_label, font=f_val, fill=streak_col, stroke_width=S(2), stroke_fill=(0, 0, 0, 150))
+right_x = col_mid + S(22)
 
-    div_y = content_top + S(210)
-    draw.line([(col_left, div_y), (col_right, div_y)], fill=SOFT, width=S(2))
+draw.text((right_x, content_top), "RECORD", font=f_lab, fill=HEADER)
+draw.text(
+    (right_x, content_top + S(28)),
+    f"{wins}W – {losses}L",
+    font=f_val,
+    fill=WHITE,
+    stroke_width=S(2),
+    stroke_fill=(0, 0, 0, 150),
+)
 
-    draw.text((col_left, div_y + S(16)), "SIGNATURE MOVE", font=f_lab, fill=MUTED)
-    draw.text((col_left, div_y + S(44)), move_text, font=f_move, fill=WHITE, stroke_width=S(2), stroke_fill=(0, 0, 0, 170))
+SUB = (165, 165, 178, 255)  # slightly nicer than MUTED for helper text
+draw.text((right_x, content_top + S(62)), f"{wr}% win rate", font=f_small, fill=SUB)
 
+draw.text((right_x, content_top + S(102)), "STREAK", font=f_lab, fill=HEADER)
+streak_col = (rc[0], rc[1], rc[2], 255) if streak >= 3 else WHITE
+streak_label = f"{streak} Wins 🔥" if streak >= 3 else f"{streak} Wins"
+draw.text(
+    (right_x, content_top + S(130)),
+    streak_label,
+    font=f_val,
+    fill=streak_col,
+    stroke_width=S(2),
+    stroke_fill=(0, 0, 0, 150),
+)
+
+# --- SIGNATURE MOVE (bottom)
+div_y = content_top + S(210)
+draw.line([(col_left, div_y), (col_right, div_y)], fill=SOFT, width=S(2))
+
+draw.text((col_left, div_y + S(16)), "SIGNATURE MOVE", font=f_lab, fill=HEADER)
+move_display = move_text if move_text.strip() else "NONE SET"
+move_fill = WHITE if move_text.strip() else SUB
+draw.text(
+    (col_left, div_y + S(44)),
+    move_display,
+    font=f_move,
+    fill=move_fill,
+    stroke_width=S(2),
+    stroke_fill=(0, 0, 0, 170),
+)
     # Progress
     bar_y = panel_pad_b - S(58)
     pct_clamped = max(0.0, min(1.0, float(pct)))
