@@ -210,6 +210,8 @@ def make_profile_card(
     WHITE: RGBA = (238, 236, 232, 255)
     MUTED: RGBA = (155, 155, 165, 255)
     SOFT: RGBA  = (255, 255, 255, 40)
+    HEADER: RGBA = (185, 185, 200, 255)
+    SUB: RGBA = (165, 165, 178, 255)
 
     # Base
     card = Image.new("RGBA", (W, H), (0, 0, 0, 255))
