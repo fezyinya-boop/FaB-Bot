@@ -17,6 +17,17 @@ RGB = Tuple[int, int, int]
 FONTS_DIR = os.path.join(os.path.dirname(__file__), "fonts")
 ASSETS_DIR = os.path.join(os.path.dirname(__file__), "assets")
 
+async def fetch_avatar(url: str) -> Optional[Image.Image]:
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(str(url), timeout=aiohttp.ClientTimeout(total=6)) as resp:
+                if resp.status == 200:
+                    data = await resp.read()
+                    return Image.open(io.BytesIO(data)).convert("RGBA")
+    except Exception as e:
+        print(f"Avatar fetch error: {e}")
+    return None
+
 # ----------------------------
 # Anime arena background overlay
 # ---------------------------
