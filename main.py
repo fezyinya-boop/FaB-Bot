@@ -523,7 +523,7 @@ async def intro(ctx):
     )
     embed.add_field(name="⚔️ MATCHMAKING 101", value=matchmaking, inline=False)
 
-    embed.set_footer(text=f"Arena Agent v3.0 • {total_matches} matches recorded • Auto-Elo Enabled")
+    embed.set_footer(text=f"Arena Guide v3.0 • {total_matches} matches recorded • Auto-Elo Enabled")
 
     # --- THE INTERACTIVE BUTTONS ---
     view = discord.ui.View()
