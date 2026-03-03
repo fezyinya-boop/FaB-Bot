@@ -25,18 +25,20 @@ def apply_anime_arena_background(
     art: Image.Image,
     *,
     focus_right: bool = True,
-    art_strength: float = 0.55,   # 0..1 visibility of art
-    blur_px: int = 10,            # soften detail so it’s not clutter
-    saturation: float = 1.10,     # keep anime pop
-    brightness: float = 0.62,     # darken so UI dominates
+    art_strength: float = 0.75,   # stronger so you actually see it
+    blur_px: int = 6,             # less blur = more “anime vibe”
+    saturation: float = 1.15,     # keep anime pop
+    brightness: float = 0.75,     # less dark so color shows
     contrast: float = 1.05,
+    left_protect_width: float = 0.45,  # protect UI area but not too aggressive
+    left_protect_alpha: int = 140,     # lower than 200 so art still shows
 ) -> Image.Image:
     """
     Anime-style background plate:
     - cover-fit art (optional right-bias crop)
-    - blur/desaturate/brighten controls
-    - left readability gradient
-    - subtle vignette + soft bloom
+    - blur/contrast/brightness/saturation controls
+    - left readability gradient (subtle)
+    - vignette + bloom
     """
     W, H = base.size
     art = art.convert("RGBA")
@@ -72,10 +74,14 @@ def apply_anime_arena_background(
     art.putalpha(a)
     out = Image.alpha_composite(base, art)
 
+    # --- Subtle magic tint to lean “arena / sorcerer” without clutter
+    tint = Image.new("RGBA", (W, H), (120, 60, 180, 28))  # soft purple glow
+    out = Image.alpha_composite(out, tint)
+
     # --- Left readability gradient (protects text/UI)
     grad = Image.new("L", (W, H), 0)
     gd = ImageDraw.Draw(grad)
-    gd.rectangle((0, 0, int(W * 0.55), H), fill=200)
+    gd.rectangle((0, 0, int(W * left_protect_width), H), fill=left_protect_alpha)
     grad = grad.filter(ImageFilter.GaussianBlur(radius=int(W * 0.08)))
 
     shade = Image.new("RGBA", (W, H), (0, 0, 0, 255))
@@ -94,7 +100,7 @@ def apply_anime_arena_background(
     out = Image.alpha_composite(out, edge_dark)
 
     # --- Soft bloom (keeps “magic glow” vibe)
-    bright_pass = ImageEnhance.Brightness(out).enhance(1.20).filter(ImageFilter.GaussianBlur(radius=6))
+    bright_pass = ImageEnhance.Brightness(out).enhance(1.18).filter(ImageFilter.GaussianBlur(radius=6))
     out = ImageChops.screen(out, bright_pass)
 
     return out
@@ -218,6 +224,7 @@ def make_profile_card(
 
     # ✅ Apply anime arena background FIRST (so your UI draws on top)
     bg_path = os.path.join(ASSETS_DIR, "arena_bg.png")
+    bg_loaded = False
     if os.path.exists(bg_path):
         try:
             bg = Image.open(bg_path).convert("RGBA")
@@ -225,21 +232,31 @@ def make_profile_card(
                 card,
                 bg,
                 focus_right=True,
-                art_strength=0.55,
-                blur_px=10,
-                saturation=1.10,
-                brightness=0.62,
+                # defaults are already stronger in the function signature,
+                # but you can override here if you want:
+                art_strength=0.78,
+                blur_px=6,
+                saturation=1.15,
+                brightness=0.75,
                 contrast=1.05,
+                left_protect_width=0.45,
+                left_protect_alpha=140,
             )
+            bg_loaded = True
         except Exception as e:
             print(f"Background overlay error: {e}")
 
     draw = ImageDraw.Draw(card)
 
-    # Subtle left->right gradient (keep it subtle)
-    for x in range(W):
-        shade = int(18 - 10 * (x / W))
-        draw.line([(x, 0), (x, H)], fill=(shade, shade, shade, 255))
+    # Subtle left->right gradient (conditional so it doesn't wash out the background art)
+    if not bg_loaded:
+        for x in range(W):
+            shade = int(18 - 10 * (x / W))
+            draw.line([(x, 0), (x, H)], fill=(shade, shade, shade, 255))
+    else:
+        for x in range(W):
+            shade = int(10 - 6 * (x / W))
+            draw.line([(x, 0), (x, H)], fill=(shade, shade, shade, 160))
 
     # Colors
     WHITE: RGBA = (238, 236, 232, 255)
