@@ -15,6 +15,7 @@ TOKEN = os.environ["DISCORD_TOKEN"]
 LEADERBOARD_CHANNEL_ID = int(os.environ['LEADERBOARD_CHANNEL_ID'])
 MOD_ROLE_ID = 1477213439586996285 # <--- Ensure this is your Role ID
 GUILD_ID = int(os.getenv("GUILD_ID", 0))
+DUEL_CHANNEL_ID = 1477881887601983669
 
 # --- Railway-Proof Database Logic ---
 # This looks for the variable you just set in the Railway dashboard
@@ -1627,17 +1628,40 @@ def _is_mod_or_admin(member: discord.Member) -> bool:
     return is_admin or is_mod
 
 
-@bot.tree.command(name="match", description="Start an open lobby that anyone can join (expires in 10 minutes).")
+@bot.tree.command(name="match", description="Start an open lobby that anyone can join.")
 async def match_slash(interaction: discord.Interaction):
+
+    duel_channel = bot.get_channel(DUEL_CHANNEL_ID)
+
+    if duel_channel is None:
+        return await interaction.response.send_message(
+            "⚠️ Duel channel not found. Contact an admin.",
+            ephemeral=True
+        )
+
     view = OpenMatchView(interaction.user)
+
     embed = discord.Embed(
-        title="🏟️ OPEN LOBBY",
+        title="⚔️ MATCH QUEUED",
         description=f"**{interaction.user.display_name}** is looking for an opponent!\nClick the button below to join the arena.",
         color=0x2ecc71
     )
-    embed.set_footer(text="This lobby will expire in 10 minutes.")
-    await interaction.response.send_message(embed=embed, view=view)
 
+    embed.set_footer(text="This lobby will expire in 10 minutes.")
+
+    # Send confirmation to the user
+    await interaction.response.send_message(
+        f"⚔️ Lobby created in {duel_channel.mention}!",
+        ephemeral=True
+    )
+
+    # Send the actual lobby to the duel channel
+    msg = await duel_channel.send(embed=embed, view=view)
+
+    # Store message references for timeout handling
+    view.guild_id = interaction.guild.id
+    view.channel_id = duel_channel.id
+    view.message_id = msg.id
 
 @bot.tree.command(name="duel", description="Challenge a specific player to a match.")
 @app_commands.describe(opponent="The player you want to challenge")
