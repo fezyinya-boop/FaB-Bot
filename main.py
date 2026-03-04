@@ -1949,24 +1949,45 @@ async def ga_get_by_slug(session, slug: str):
 
 
 def ga_card_image_url(card: dict) -> str | None:
+    # Try editions first
     editions = card.get("editions")
-
     if isinstance(editions, list) and editions:
-        ed = editions[0]
+        for ed in editions:
+            if not isinstance(ed, dict):
+                continue
+            for key in ("image", "image_filename", "filename", "file"):
+                v = ed.get(key)
+                if isinstance(v, str) and v.strip():
+                    return f"{GATCG_API_BASE}/cards/images/{v.strip()}"
+            imgs = ed.get("images")
+            if isinstance(imgs, dict):
+                for k in ("large", "normal", "small", "png"):
+                    v = imgs.get(k)
+                    if isinstance(v, str) and v.startswith("http"):
+                        return v
 
-        # Most GA cards store filename here
-        for key in ("image", "image_filename", "filename"):
-            v = ed.get(key)
-            if isinstance(v, str) and v.strip():
-                return f"{GATCG_API_BASE}/cards/images/{v}"
+    # Try printings (common alternative)
+    printings = card.get("printings")
+    if isinstance(printings, list) and printings:
+        for pr in printings:
+            if not isinstance(pr, dict):
+                continue
+            for key in ("image", "image_filename", "filename", "file"):
+                v = pr.get(key)
+                if isinstance(v, str) and v.strip():
+                    return f"{GATCG_API_BASE}/cards/images/{v.strip()}"
+            imgs = pr.get("images")
+            if isinstance(imgs, dict):
+                for k in ("large", "normal", "small", "png"):
+                    v = imgs.get(k)
+                    if isinstance(v, str) and v.startswith("http"):
+                        return v
 
-        # Sometimes nested image dict
-        imgs = ed.get("images")
-        if isinstance(imgs, dict):
-            for k in ("large", "normal", "small"):
-                v = imgs.get(k)
-                if isinstance(v, str) and v.startswith("http"):
-                    return v
+    # Direct URL fallback (rare, but harmless)
+    for k in ("image_url", "imageUrl", "art_url"):
+        v = card.get(k)
+        if isinstance(v, str) and v.startswith("http"):
+            return v
 
     return None
 
