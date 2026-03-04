@@ -197,6 +197,9 @@ async def update_player_role(member, points):
 
 # --- Match Handling Views --- #
 
+bot = commands.Bot(command_prefix='!', intents=discord.Intents.all())
+
+
 class LeaderboardWebView(discord.ui.View):
     def __init__(self, url):
         super().__init__(timeout=None) # Persistent button
@@ -546,7 +549,6 @@ class ChallengeView(discord.ui.View):
         
 
 # --- Commands ---
-bot = commands.Bot(command_prefix='!', intents=discord.Intents.all())
 
 @bot.command(name="intro")
 @commands.has_permissions(administrator=True)
