@@ -2067,21 +2067,51 @@ async def card_slash(interaction: discord.Interaction, card: str):
     """
     await interaction.response.defer(thinking=True)
 
-    async with aiohttp.ClientSession() as session:
-        slug = (card or "").strip()
+async with aiohttp.ClientSession() as session:
+    slug = (card or "").strip()
 
-        full = await ga_get_by_slug(session, slug)
-        if not full:
-            hits = await ga_autocomplete(session, slug)
-            if not hits:
-                return await interaction.followup.send(f"❌ No card found for **{card}**.")
-            slug2 = hits[0].get("slug")
-            if not slug2:
-                return await interaction.followup.send(f"❌ No card found for **{card}**.")
-            full = await ga_get_by_slug(session, slug2)
+    full = await ga_get_by_slug(session, slug)
 
-        if not full:
+    if not full:
+        hits = await ga_autocomplete(session, slug)
+        if not hits:
             return await interaction.followup.send(f"❌ No card found for **{card}**.")
+
+        slug2 = hits[0].get("slug")
+        if not slug2:
+            return await interaction.followup.send(f"❌ No card found for **{card}**.")
+
+        full = await ga_get_by_slug(session, slug2)
+
+    if not full:
+        return await interaction.followup.send(f"❌ No card found for **{card}**.")
+
+    # ---- DEBUG ----
+    img = ga_card_image_url(full)
+
+    print("SLUG:", full.get("slug"))
+    print(
+        "HAS EDITIONS:",
+        isinstance(full.get("editions"), list),
+        "LEN:",
+        (len(full.get("editions")) if isinstance(full.get("editions"), list) else None),
+    )
+
+    print(
+        "ED0 KEYS:",
+        list(
+            (full.get("editions")[0] if isinstance(full.get("editions"), list) and full.get("editions") else {}).keys()
+        ),
+    )
+
+    print("IMG URL:", img)
+
+    if img:
+        async with session.get(img, timeout=10) as r:
+            print("IMG STATUS:", r.status)
+            print("IMG CONTENT-TYPE:", r.headers.get("Content-Type"))
+            chunk = await r.content.read(32)
+            print("IMG FIRST BYTES:", chunk)
 
     await interaction.followup.send(embed=build_ga_embed(full))
     
