@@ -783,8 +783,7 @@ async def on_ready():
             guild = discord.Object(id=GUILD_ID)
             bot.tree.copy_global_to(guild=guild)
             synced = await bot.tree.sync(guild=guild)
-            print(f"Final sync: {len(synced)} commands")
-            print(f"✅ Slash commands synced instantly to guild {GUILD_ID}")
+            print(f"Final sync: {len(synced)} commands"
         else:
             await bot.tree.sync()
             print("🌍 Slash commands synced globally (may take time to appear)")
@@ -962,55 +961,9 @@ async def profile(ctx, member: discord.Member = None):
     
     
 
-@bot.command()
-@commands.has_permissions(administrator=True)
-async def fix_database(ctx):
-    conn = get_conn()
-    c = conn.cursor()
-    try:
-        # This creates the missing config table
-        c.execute('''CREATE TABLE IF NOT EXISTS config (key TEXT PRIMARY KEY, value TEXT)''')
-        # Also ensure 'streak' column exists in users table just in case
-        try:
-            c.execute("ALTER TABLE users ADD COLUMN streak INTEGER DEFAULT 0")
-        except:
-            pass # Already exists
-        conn.commit()
-        await ctx.send("✅ Database tables patched! You can now use !settle.")
-    except Exception as e:
-        await ctx.send(f"❌ Error patching database: {e}")
-    finally:
-        conn.close()
 
-@bot.command()
-@commands.has_permissions(administrator=True)
-async def sync_rpg(ctx):
-    conn = get_conn()
-    c = conn.cursor()
-    try:
-        # Create profiles table without class_name
-        c.execute('''CREATE TABLE IF NOT EXISTS profiles 
-                     (user_id TEXT PRIMARY KEY,
-                      cashtag TEXT,
-                      title TEXT DEFAULT 'Aspirant', 
-                      signature_move TEXT DEFAULT 'None', 
-                      embed_color TEXT)''')
-        
-        # Safely add columns to users if they are missing
-        c.execute("PRAGMA table_info(users)")
-        cols = [column[1] for column in c.fetchall()]
-        
-        if 'streak' not in cols:
-            c.execute("ALTER TABLE users ADD COLUMN streak INTEGER DEFAULT 0")
-        if 'history' not in cols:
-            c.execute("ALTER TABLE users ADD COLUMN history TEXT DEFAULT ''")
-            
-        conn.commit()
-        await ctx.send("✅ **Database Sync Success!** Columns verified and RPG table active.")
-    except Exception as e:
-        await ctx.send(f"❌ Database Sync Error: {e}")
-    finally:
-        conn.close()
+
+
         
 
 @bot.command()
