@@ -195,6 +195,10 @@ async def update_player_role(member, points):
         await member.add_roles(role)
 
 
+
+bot = commands.Bot(command_prefix='!', intents=discord.Intents.all())
+
+
 # --- Match Handling Views --- #
 
 class LeaderboardWebView(discord.ui.View):
@@ -546,7 +550,7 @@ class ChallengeView(discord.ui.View):
         
 
 # --- Commands ---
-bot = commands.Bot(command_prefix='!', intents=discord.Intents.all())
+
 
 @bot.command(name="intro")
 @commands.has_permissions(administrator=True)
