@@ -783,7 +783,7 @@ async def on_ready():
             guild = discord.Object(id=GUILD_ID)
             bot.tree.copy_global_to(guild=guild)
             synced = await bot.tree.sync(guild=guild)
-            print(f"Final sync: {len(synced)} commands"
+            print(f"Final sync: {len(synced)} commands")
         else:
             await bot.tree.sync()
             print("🌍 Slash commands synced globally (may take time to appear)")
