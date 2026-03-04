@@ -1949,50 +1949,24 @@ async def ga_get_by_slug(session, slug: str):
 
 
 def ga_card_image_url(card: dict) -> str | None:
-    # 1) Direct URL fields (some endpoints return these)
-    for k in ("image_url", "imageUrl", "image", "art", "art_url", "card_image"):
-        v = card.get(k)
-        if isinstance(v, str) and v.startswith("http"):
-            return v
-
-    # 2) editions[0] variants
     editions = card.get("editions")
+
     if isinstance(editions, list) and editions:
-        ed0 = editions[0] or {}
+        ed = editions[0]
 
-        # Sometimes it's already a full URL
-        for k in ("image_url", "imageUrl", "image", "art_url"):
-            v = ed0.get(k)
-            if isinstance(v, str) and v.startswith("http"):
-                return v
-
-        # Sometimes it's a filename we must pass to /cards/images/{file}
-        for k in ("image_filename", "filename", "file", "imageFile"):
-            v = ed0.get(k)
-            if isinstance(v, str) and v:
+        # Most GA cards store filename here
+        for key in ("image", "image_filename", "filename"):
+            v = ed.get(key)
+            if isinstance(v, str) and v.strip():
                 return f"{GATCG_API_BASE}/cards/images/{v}"
 
-        # Sometimes nested "images" dict
-        imgs = ed0.get("images")
+        # Sometimes nested image dict
+        imgs = ed.get("images")
         if isinstance(imgs, dict):
-            for kk in ("large", "normal", "small", "png"):
-                v = imgs.get(kk)
+            for k in ("large", "normal", "small"):
+                v = imgs.get(k)
                 if isinstance(v, str) and v.startswith("http"):
                     return v
-
-    # 3) card-level images dict
-    imgs = card.get("images")
-    if isinstance(imgs, dict):
-        for kk in ("large", "normal", "small", "png"):
-            v = imgs.get(kk)
-            if isinstance(v, str) and v.startswith("http"):
-                return v
-
-    # 4) card-level filename fallback
-    for k in ("image_filename", "filename", "file"):
-        v = card.get(k)
-        if isinstance(v, str) and v:
-            return f"{GATCG_API_BASE}/cards/images/{v}"
 
     return None
 
