@@ -9,6 +9,7 @@ from flask import Flask, jsonify
 from flask_cors import CORS
 from threading import Thread
 from tabulate import tabulate 
+import urllib.parse
 
 # --- Config & Secrets ---
 TOKEN = os.environ["DISCORD_TOKEN"]
@@ -16,6 +17,7 @@ LEADERBOARD_CHANNEL_ID = int(os.environ['LEADERBOARD_CHANNEL_ID'])
 MOD_ROLE_ID = 1477213439586996285 # <--- Ensure this is your Role ID
 GUILD_ID = int(os.getenv("GUILD_ID", 0))
 DUEL_CHANNEL_ID = 1477881887601983669
+GATCG_API_BASE = "https://api.gatcg.com"
 
 # --- Railway-Proof Database Logic ---
 # This looks for the variable you just set in the Railway dashboard
@@ -1918,6 +1920,94 @@ async def clear_slash(interaction: discord.Interaction, amount: int = 100):
     await interaction.response.defer(ephemeral=True)
     deleted = await interaction.channel.purge(limit=amount)
     await interaction.followup.send(f"✅ Cleared `{len(deleted)}` messages.", ephemeral=True)
+
+
+async def ga_find_card_by_name(session: aiohttp.ClientSession, name: str) -> dict | None:
+    # cards/search supports query params; we’ll use a simple text search.
+    # If your API returns multiple results, we pick the first/best match.
+    # NOTE: Exact param names may differ; see docs for full options.
+    q = urllib.parse.quote(name.strip())
+    url = f"{GATCG_API_BASE}/cards/search?query={q}&limit=5"
+    async with session.get(url, timeout=15) as r:
+        if r.status != 200:
+            return None
+        data = await r.json()
+
+    # Common patterns: {"results":[...]} or a raw list. Handle both.
+    if isinstance(data, dict) and "results" in data:
+        results = data["results"]
+    elif isinstance(data, list):
+        results = data
+    else:
+        # Some APIs use "cards" key
+        results = data.get("cards", []) if isinstance(data, dict) else []
+
+    return results[0] if results else None
+
+async def ga_get_card_by_slug(session: aiohttp.ClientSession, slug: str) -> dict | None:
+    url = f"{GATCG_API_BASE}/cards/{urllib.parse.quote(slug)}"
+    async with session.get(url, timeout=15) as r:
+        if r.status != 200:
+            return None
+        return await r.json()
+
+def build_card_embed(card: dict) -> discord.Embed:
+    name = card.get("name", "Unknown Card")
+    slug = card.get("slug", "")
+    embed = discord.Embed(title=name, color=0x2b2d31)
+    embed.url = f"https://index.gatcg.com/cards/{slug}" if slug else None  # nice click-through
+
+    # Light, resilient field mapping (API fields vary by card type)
+    classes = card.get("classes") or card.get("class") or []
+    if isinstance(classes, list) and classes:
+        embed.add_field(name="Class", value=", ".join(classes), inline=True)
+
+    card_type = card.get("type") or card.get("card_type")
+    if card_type:
+        embed.add_field(name="Type", value=str(card_type), inline=True)
+
+    cost = card.get("cost") or card.get("cost_memory") or card.get("memory_cost")
+    if cost is not None:
+        embed.add_field(name="Cost", value=str(cost), inline=True)
+
+    text = card.get("text") or card.get("rules_text") or card.get("effect")
+    if text:
+        # keep it short; Discord embed field limits
+        if len(text) > 900:
+            text = text[:900] + "…"
+        embed.add_field(name="Text", value=text, inline=False)
+
+    # Image: many APIs return a filename for the art. If present, use it.
+    # Official image endpoint: /cards/images/{filename} 4
+    img = card.get("image") or card.get("image_filename") or card.get("filename")
+    if img:
+        embed.set_image(url=f"{GATCG_API_BASE}/cards/images/{img}")
+
+    return embed
+
+# Slash command: /card "Card Name"
+@bot.tree.command(name="card", description="Look up a Grand Archive card by name.")
+@app_commands.describe(name="Card name to search")
+async def card_slash(interaction: discord.Interaction, name: str):
+    await interaction.response.defer(thinking=True)
+
+    async with aiohttp.ClientSession() as session:
+        hit = await ga_find_card_by_name(session, name)
+        if not hit:
+            return await interaction.followup.send(f"❌ No card found for **{name}**.")
+
+        # If the search result already contains full details, you can skip this.
+        slug = hit.get("slug") or hit.get("card_slug")
+        card = hit
+        if slug:
+            full = await ga_get_card_by_slug(session, slug)
+            if full:
+                card = full
+
+    embed = build_card_embed(card)
+    await interaction.followup.send(embed=embed)
+
+
 
 
 @bot.tree.command(name="profile", description="View a player's Archive Arena profile")
