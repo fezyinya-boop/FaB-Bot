@@ -769,6 +769,7 @@ async def leaderboard(ctx):
     
     
 
+
 @bot.event
 async def on_ready():
     print(f"GUILD_ID: {GUILD_ID}, type: {type(GUILD_ID)}")
@@ -780,12 +781,7 @@ async def on_ready():
     try:
         if GUILD_ID:
             guild = discord.Object(id=GUILD_ID)
-            # Nuke everything
-            bot.tree.clear_commands(guild=None)
-            bot.tree.clear_commands(guild=guild)
-            await bot.tree.sync(guild=None)
-            await bot.tree.sync(guild=guild)
-            # Now re-add and sync
+            bot.tree.copy_global_to(guild=guild)
             synced = await bot.tree.sync(guild=guild)
             print(f"Final sync: {len(synced)} commands")
             print(f"✅ Slash commands synced instantly to guild {GUILD_ID}")
@@ -796,6 +792,7 @@ async def on_ready():
         print(f"Sync error: {e}")
 
     print(f'Logged in as {bot.user.name}')
+
 
 
 @bot.command()
