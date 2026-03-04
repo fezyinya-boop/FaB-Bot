@@ -10,6 +10,7 @@ from flask_cors import CORS
 from threading import Thread
 from tabulate import tabulate 
 import urllib.parse
+import aiohttp
 
 # --- Config & Secrets ---
 TOKEN = os.environ["DISCORD_TOKEN"]
