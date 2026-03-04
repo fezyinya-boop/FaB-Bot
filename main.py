@@ -1923,89 +1923,132 @@ async def clear_slash(interaction: discord.Interaction, amount: int = 100):
     await interaction.followup.send(f"✅ Cleared `{len(deleted)}` messages.", ephemeral=True)
 
 
-async def ga_find_card_by_name(session: aiohttp.ClientSession, name: str) -> dict | None:
-    # cards/search supports query params; we’ll use a simple text search.
-    # If your API returns multiple results, we pick the first/best match.
-    # NOTE: Exact param names may differ; see docs for full options.
-    q = urllib.parse.quote(name.strip())
-    url = f"{GATCG_API_BASE}/cards/search?query={q}&limit=5"
+# ---- GA card lookup (improved) ----
+GATCG_API_BASE = "https://api.gatcg.com"
+
+async def ga_autocomplete(session, partial: str):
+    partial = (partial or "").strip()
+    if not partial:
+        return []
+    url = f"{GATCG_API_BASE}/cards/autocomplete?name={urllib.parse.quote(partial)}"
     async with session.get(url, timeout=15) as r:
         if r.status != 200:
-            return None
-        data = await r.json()
+            return []
+        return await r.json()  # expected: list of {name, slug, ...}
 
-    # Common patterns: {"results":[...]} or a raw list. Handle both.
-    if isinstance(data, dict) and "results" in data:
-        results = data["results"]
-    elif isinstance(data, list):
-        results = data
-    else:
-        # Some APIs use "cards" key
-        results = data.get("cards", []) if isinstance(data, dict) else []
-
-    return results[0] if results else None
-
-async def ga_get_card_by_slug(session: aiohttp.ClientSession, slug: str) -> dict | None:
+async def ga_get_by_slug(session, slug: str):
+    slug = (slug or "").strip()
+    if not slug:
+        return None
     url = f"{GATCG_API_BASE}/cards/{urllib.parse.quote(slug)}"
     async with session.get(url, timeout=15) as r:
         if r.status != 200:
             return None
         return await r.json()
 
-def build_card_embed(card: dict) -> discord.Embed:
-    name = card.get("name", "Unknown Card")
-    slug = card.get("slug", "")
-    embed = discord.Embed(title=name, color=0x2b2d31)
-    embed.url = f"https://index.gatcg.com/cards/{slug}" if slug else None  # nice click-through
-
-    # Light, resilient field mapping (API fields vary by card type)
-    classes = card.get("classes") or card.get("class") or []
-    if isinstance(classes, list) and classes:
-        embed.add_field(name="Class", value=", ".join(classes), inline=True)
-
-    card_type = card.get("type") or card.get("card_type")
-    if card_type:
-        embed.add_field(name="Type", value=str(card_type), inline=True)
-
-    cost = card.get("cost") or card.get("cost_memory") or card.get("memory_cost")
-    if cost is not None:
-        embed.add_field(name="Cost", value=str(cost), inline=True)
-
-    text = card.get("text") or card.get("rules_text") or card.get("effect")
-    if text:
-        # keep it short; Discord embed field limits
-        if len(text) > 900:
-            text = text[:900] + "…"
-        embed.add_field(name="Text", value=text, inline=False)
-
-    # Image: many APIs return a filename for the art. If present, use it.
-    # Official image endpoint: /cards/images/{filename} 4
+def ga_card_image_url(card: dict) -> str | None:
+    # Defensive: API fields can vary by card/edition
+    editions = card.get("editions") or []
+    if isinstance(editions, list) and editions:
+        ed0 = editions[0] or {}
+        img = ed0.get("image") or ed0.get("image_filename") or ed0.get("filename")
+        if img:
+            return f"{GATCG_API_BASE}/cards/images/{img}"
     img = card.get("image") or card.get("image_filename") or card.get("filename")
     if img:
-        embed.set_image(url = f"{GATCG_API_BASE}/cards/search?name={q}"
-    return embed
+        return f"{GATCG_API_BASE}/cards/images/{img}"
+    return None
 
-# Slash command: /card "Card Name"
-@bot.tree.command(name="card", description="Look up a Grand Archive card by name.")
-@app_commands.describe(name="Card name to search")
-async def card_slash(interaction: discord.Interaction, name: str):
+def build_ga_embed(card: dict) -> discord.Embed:
+    name = card.get("name", "Unknown Card")
+    slug = card.get("slug", "")
+
+    types = card.get("types") or card.get("type") or card.get("card_type")
+    classes = card.get("classes") or []
+    elements = card.get("elements") or []
+
+    cost = None
+    if isinstance(card.get("cost"), dict):
+        cost = card.get("cost", {}).get("memory")
+    else:
+        cost = card.get("cost_memory") or card.get("memory_cost") or card.get("cost")
+
+    text = card.get("effect") or card.get("effect_raw") or card.get("text") or card.get("rules_text") or ""
+
+    e = discord.Embed(title=name, color=0x2b2d31)
+    if slug:
+        e.url = f"https://index.gatcg.com/cards/{slug}"
+
+    if types:
+        e.add_field(
+            name="Type",
+            value=", ".join(types) if isinstance(types, list) else str(types),
+            inline=True,
+        )
+    if classes:
+        e.add_field(name="Class", value=", ".join(classes), inline=True)
+    if elements:
+        e.add_field(name="Element", value=", ".join(elements), inline=True)
+    if cost is not None:
+        e.add_field(name="Cost", value=str(cost), inline=True)
+
+    if text:
+        if len(text) > 900:
+            text = text[:900] + "…"
+        e.add_field(name="Text", value=text, inline=False)
+
+    img = ga_card_image_url(card)
+    if img:
+        e.set_image(url=img)
+
+    return e
+
+# ---- Discord autocomplete ----
+async def card_name_autocomplete(interaction: discord.Interaction, current: str):
+    current = (current or "").strip()
+    if len(current) < 2:
+        return []
+
+    async with aiohttp.ClientSession() as session:
+        hits = await ga_autocomplete(session, current)
+
+    choices = []
+    for h in (hits or [])[:10]:
+        nm = h.get("name")
+        slug = h.get("slug")
+        if nm and slug:
+            choices.append(app_commands.Choice(name=nm, value=slug))
+    return choices
+
+# ---- /card command ----
+@bot.tree.command(name="card", description="Look up a Grand Archive card (autocomplete).")
+@app_commands.describe(card="Start typing a card name…")
+@app_commands.autocomplete(card=card_name_autocomplete)
+async def card_slash(interaction: discord.Interaction, card: str):
+    """
+    If user picks from autocomplete, `card` is a slug.
+    If user types a raw name and hits enter, we fall back to autocomplete and pick top hit.
+    """
     await interaction.response.defer(thinking=True)
 
     async with aiohttp.ClientSession() as session:
-        hit = await ga_find_card_by_name(session, name)
-        if not hit:
-            return await interaction.followup.send(f"❌ No card found for **{name}**.")
+        slug = (card or "").strip()
 
-        # If the search result already contains full details, you can skip this.
-        slug = hit.get("slug") or hit.get("card_slug")
-        card = hit
-        if slug:
-            full = await ga_get_card_by_slug(session, slug)
-            if full:
-                card = full
+        full = await ga_get_by_slug(session, slug)
+        if not full:
+            hits = await ga_autocomplete(session, slug)
+            if not hits:
+                return await interaction.followup.send(f"❌ No card found for **{card}**.")
+            slug2 = hits[0].get("slug")
+            if not slug2:
+                return await interaction.followup.send(f"❌ No card found for **{card}**.")
+            full = await ga_get_by_slug(session, slug2)
 
-    embed = build_card_embed(card)
-    await interaction.followup.send(embed=embed)
+        if not full:
+            return await interaction.followup.send(f"❌ No card found for **{card}**.")
+
+    await interaction.followup.send(embed=build_ga_embed(full))
+    
 
 
 
