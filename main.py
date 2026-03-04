@@ -1653,8 +1653,6 @@ if __name__ == "__main__":
     init_db()      # Initialize your SQLite tables
     keep_alive()   # Start the website thread
 
-bot.run(TOKEN)
-
 # --- Slash Command Wrappers ---
 # These provide /match, /duel, etc. while keeping the existing !commands for backwards compatibility.
 
@@ -2053,3 +2051,4 @@ async def clear_slash(interaction: discord.Interaction, amount: int = 100):
     deleted = await interaction.channel.purge(limit=amount)
     await interaction.followup.send(f"✅ Cleared `{len(deleted)}` messages.", ephemeral=True)
 
+bot.run(TOKEN)
