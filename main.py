@@ -1949,45 +1949,27 @@ async def ga_get_by_slug(session, slug: str):
 
 
 def ga_card_image_url(card: dict) -> str | None:
-    # Try editions first
+
     editions = card.get("editions")
+
     if isinstance(editions, list) and editions:
-        for ed in editions:
-            if not isinstance(ed, dict):
-                continue
-            for key in ("image", "image_filename", "filename", "file"):
-                v = ed.get(key)
-                if isinstance(v, str) and v.strip():
-                    return f"{GATCG_API_BASE}/cards/images/{v.strip()}"
-            imgs = ed.get("images")
-            if isinstance(imgs, dict):
-                for k in ("large", "normal", "small", "png"):
-                    v = imgs.get(k)
-                    if isinstance(v, str) and v.startswith("http"):
-                        return v
+        ed = editions[0]
 
-    # Try printings (common alternative)
-    printings = card.get("printings")
-    if isinstance(printings, list) and printings:
-        for pr in printings:
-            if not isinstance(pr, dict):
-                continue
-            for key in ("image", "image_filename", "filename", "file"):
-                v = pr.get(key)
-                if isinstance(v, str) and v.strip():
-                    return f"{GATCG_API_BASE}/cards/images/{v.strip()}"
-            imgs = pr.get("images")
-            if isinstance(imgs, dict):
-                for k in ("large", "normal", "small", "png"):
-                    v = imgs.get(k)
-                    if isinstance(v, str) and v.startswith("http"):
-                        return v
+        for key in ("image", "image_filename", "filename"):
+            v = ed.get(key)
 
-    # Direct URL fallback (rare, but harmless)
-    for k in ("image_url", "imageUrl", "art_url"):
-        v = card.get(k)
-        if isinstance(v, str) and v.startswith("http"):
-            return v
+            if isinstance(v, str) and v.strip():
+
+                # If API already returns a path
+                if v.startswith("/"):
+                    return f"https://api.gatcg.com{v}"
+
+                # If API returns full path
+                if "cards/images" in v:
+                    return f"https://api.gatcg.com/{v}"
+
+                # Otherwise assume it's a filename
+                return f"https://api.gatcg.com/cards/images/{v}"
 
     return None
 
@@ -2058,47 +2040,31 @@ async def card_name_autocomplete(interaction: discord.Interaction, current: str)
 
 # ---- /card command ----
 @bot.tree.command(name="card", description="Look up a Grand Archive card")
-async def card_slash(interaction: discord.Interaction, card: str):
-
+@app_commands.describe(query="Start typing a card name…")
+@app_commands.autocomplete(query=card_name_autocomplete)
+async def card_slash(interaction: discord.Interaction, query: str):
     await interaction.response.defer(thinking=True)
 
     async with aiohttp.ClientSession() as session:
-
-        slug = (card or "").strip()
+        slug = (query or "").strip()
 
         full = await ga_get_by_slug(session, slug)
-
         if not full:
             hits = await ga_autocomplete(session, slug)
-
             if not hits:
-                await interaction.followup.send(f"❌ No card found for **{card}**.")
+                await interaction.followup.send(f"❌ No card found for **{query}**.")
                 return
 
             slug2 = hits[0].get("slug")
-
             if not slug2:
-                await interaction.followup.send(f"❌ No card found for **{card}**.")
+                await interaction.followup.send(f"❌ No card found for **{query}**.")
                 return
 
             full = await ga_get_by_slug(session, slug2)
 
         if not full:
-            await interaction.followup.send(f"❌ No card found for **{card}**.")
+            await interaction.followup.send(f"❌ No card found for **{query}**.")
             return
-
-        img = ga_card_image_url(full)
-
-        print("SLUG:", full.get("slug"))
-        print("IMG URL:", img)
-
-        if img:
-            try:
-                async with session.get(img, timeout=10) as r:
-                    print("IMG STATUS:", r.status)
-                    print("IMG CONTENT-TYPE:", r.headers.get("Content-Type"))
-            except Exception as e:
-                print("IMG FETCH ERROR:", e)
 
         embed = build_ga_embed(full)
 
