@@ -769,6 +769,8 @@ async def leaderboard(ctx):
     
 @bot.event
 async def on_ready():
+    cmds = bot.tree.get_commands()
+    print(f"Commands in tree: {[c.name for c in cmds]}")
     init_db()
     start_keep_alive_once()
 
