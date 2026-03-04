@@ -1982,8 +1982,7 @@ def build_card_embed(card: dict) -> discord.Embed:
     # Official image endpoint: /cards/images/{filename} 4
     img = card.get("image") or card.get("image_filename") or card.get("filename")
     if img:
-        embed.set_image(url=f"{GATCG_API_BASE}/cards/images/{img}")
-
+        embed.set_image(url = f"{GATCG_API_BASE}/cards/search?name={q}"
     return embed
 
 # Slash command: /card "Card Name"
