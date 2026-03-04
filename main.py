@@ -1993,7 +1993,7 @@ def build_ga_embed(card: dict) -> discord.Embed:
 
     text = card.get("effect") or card.get("effect_raw") or card.get("text") or card.get("rules_text") or ""
 
-    e = discord.Embed(title=name, color=0x2b2d31)
+    e = discord.Embed(title=name, color=0x000000)
     if slug:
         e.url = f"https://index.gatcg.com/cards/{slug}"
 
