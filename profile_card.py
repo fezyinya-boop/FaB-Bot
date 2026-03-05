@@ -448,7 +448,7 @@ def make_profile_card(
         font=f_brand,
         fill=(255, 255, 255),
         stroke_width=S(2),
-        stroke_fill=(255, 255, 255),
+        stroke_fill=(0, 0, 190),
     )
 
     # Content
