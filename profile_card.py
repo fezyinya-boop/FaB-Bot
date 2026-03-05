@@ -446,9 +446,9 @@ def make_profile_card(
         (title_x, brand_y),
         "Archive Arena • Season 1",
         font=f_brand,
-        fill=(255, 215, 80, 255),
+        fill=(255, 255, 255),
         stroke_width=S(2),
-        stroke_fill=(0, 0, 0, 190),
+        stroke_fill=(255, 255, 255),
     )
 
     # Content
@@ -490,16 +490,7 @@ def make_profile_card(
         stroke_fill=(0, 0, 0, 150),
     )
 
-    # WINRATE (bottom-left)
-    draw_tracked(draw, (grid_left_x, row2_y), "WINRATE", font=f_lab, fill=HEADER, tracking=S(3), stroke_width=S(1), stroke_fill=(0, 0, 0, 180))
-    draw.text(
-        (grid_left_x, row2_y + S(34)),
-        f"{wr}%",
-        font=f_val,
-        fill=WHITE,
-        stroke_width=S(2),
-        stroke_fill=(0, 0, 0, 150),
-    )
+    
 
     # STREAK (bottom-right)
     draw_tracked(draw, (grid_right_x, row2_y), "STREAK", font=f_lab, fill=HEADER, tracking=S(3), stroke_width=S(1), stroke_fill=(0, 0, 0, 180))
