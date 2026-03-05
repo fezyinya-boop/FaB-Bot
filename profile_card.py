@@ -381,7 +381,7 @@ def make_profile_card(
             min_size=S(14),
         )
         # Center text in the gutter
-        mw = text_w(draw, move_display, f_move_gutter)
+        mw = text_width(draw, move_display, f_move_gutter)
         mx = sig_x + max(0, (sig_w - mw) // 2)
         draw.text(
             (mx, sig_y + S(34)),
