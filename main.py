@@ -11,6 +11,7 @@ from threading import Thread
 from tabulate import tabulate 
 import urllib.parse
 import aiohttp
+import time 
 
 # --- Config & Secrets ---
 TOKEN = os.environ["DISCORD_TOKEN"]
@@ -110,6 +111,12 @@ def init_db():
         timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
         notes TEXT
     )""")
+
+
+    c.execute('''CREATE TABLE IF NOT EXISTS queue (
+        user_id TEXT PRIMARY KEY,
+        joined_at INTEGER
+    )''')
               
     
     # --- Lightweight migrations (safe on existing DBs) ---
@@ -199,6 +206,30 @@ async def update_player_role(member, points):
         await member.remove_roles(*to_remove)
         await member.add_roles(role)
 
+        
+       
+
+def queue_add(user_id):
+    conn = get_conn()
+    c = conn.cursor()
+    c.execute("INSERT OR IGNORE INTO queue VALUES (?, ?)", (str(user_id), int(time.time())))
+    conn.commit()
+    conn.close()
+
+def queue_remove(user_id):
+    conn = get_conn()
+    c = conn.cursor()
+    c.execute("DELETE FROM queue WHERE user_id = ?", (str(user_id),))
+    conn.commit()
+    conn.close()
+
+def queue_list():
+    conn = get_conn()
+    c = conn.cursor()
+    c.execute("SELECT user_id FROM queue ORDER BY joined_at ASC")
+    rows = c.fetchall()
+    conn.close()
+    return [int(r[0]) for r in rows]
 
 # --- Match Handling Views --- #
 
@@ -214,6 +245,94 @@ class LeaderboardWebView(discord.ui.View):
             style=discord.ButtonStyle.link,
             emoji="🌐"
         ))
+
+
+
+class MatchFoundView(discord.ui.View):
+
+    def __init__(self, p1, p2):
+        super().__init__(timeout=60)
+        self.p1 = p1
+        self.p2 = p2
+        self.accepted = set()
+
+    async def try_start(self, interaction):
+
+        if self.p1.id in self.accepted and self.p2.id in self.accepted:
+
+            queue_remove(self.p1.id)
+            queue_remove(self.p2.id)
+
+            conn = get_conn()
+            c = conn.cursor()
+            c.execute(
+                "INSERT INTO matches (p1_id, p2_id, status) VALUES (?, ?, 'active')",
+                (str(self.p1.id), str(self.p2.id))
+            )
+            match_id = c.lastrowid
+            conn.commit()
+            conn.close()
+
+            embed = discord.Embed(
+                title="⚔️ MATCH STARTING",
+                description=f"{self.p1.mention} vs {self.p2.mention}",
+                color=0x000000
+            )
+
+            view = MatchReportingView(self.p1, self.p2, match_id)
+
+            await interaction.channel.send(
+                content=f"{self.p1.mention} {self.p2.mention}",
+                embed=embed,
+                view=view
+            )
+
+    @discord.ui.button(label="Accept", style=discord.ButtonStyle.success)
+    async def accept(self, interaction: discord.Interaction, button: discord.ui.Button):
+
+        if interaction.user.id not in [self.p1.id, self.p2.id]:
+            return await interaction.response.send_message(
+                "This match isn't for you.", ephemeral=True
+            )
+
+        self.accepted.add(interaction.user.id)
+
+        await interaction.response.send_message("Accepted.", ephemeral=True)
+
+        await self.try_start(interaction)
+
+    @discord.ui.button(label="Decline", style=discord.ButtonStyle.danger)
+    async def decline(self, interaction: discord.Interaction, button: discord.ui.Button):
+
+        queue_remove(interaction.user.id)
+
+        await interaction.response.send_message(
+            "You declined and were removed from queue.",
+            ephemeral=True
+    )
+
+async def try_queue_match(guild):
+
+    players = queue_list()
+
+    if len(players) < 2:
+        return
+
+    p1 = guild.get_member(players[0])
+    p2 = guild.get_member(players[1])
+
+    if not p1 or not p2:
+        return
+
+    channel = bot.get_channel(DUEL_CHANNEL_ID)
+
+    view = MatchFoundView(p1, p2)
+
+    await channel.send(
+        f"⚔️ **Match Found**\n{p1.mention} vs {p2.mention}\n\nBoth players click **Accept** to start.",
+        view=view
+    )
+
 
 
 
@@ -1850,6 +1969,41 @@ async def payout_slash(interaction: discord.Interaction, member: discord.Member)
             await interaction.response.send_message("❌ I couldn't DM you (privacy settings).", ephemeral=True)
     else:
         await interaction.response.send_message(f"❌ **{member.display_name}** has not registered a $Cashtag.", ephemeral=True)
+
+
+
+
+@bot.tree.command(name="dequeue", description="Leave the queue")
+async def dequeue_cmd(interaction: discord.Interaction):
+
+    queue_remove(interaction.user.id)
+
+    await interaction.response.send_message(
+        "You left the queue.",
+        ephemeral=True
+    )
+
+@bot.tree.command(name="queue", description="Join the matchmaking queue")
+async def queue_cmd(interaction: discord.Interaction):
+
+    if queue_has := interaction.user.id in queue_list():
+        return await interaction.response.send_message(
+            "You're already in queue.",
+            ephemeral=True
+        )
+
+    queue_add(interaction.user.id)
+
+    await interaction.response.send_message(
+        "You joined the queue.",
+        ephemeral=True
+    )
+
+    await try_queue_match(interaction.guild)
+
+
+
+
 
 
 @bot.tree.command(name="settle", description="(Mods) Resolve a disputed match and award victory.")
