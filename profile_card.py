@@ -423,12 +423,14 @@ def make_profile_card(
     identity_y = av_y + av_size + S(14)
     name_x = av_x + S(4)
     draw_tracked(draw, (name_x, identity_y), name_text, f_name, WHITE, S(1), stroke_width=S(2), stroke_fill=STROKE)
-    badge_x = name_bbox[2] + S(16)
+
+    name_bbox = draw.textbbox((name_x, identity_y), name_text, font=f_name, stroke_width=S(2))
+
     badge = get_rank_badge(current_rank_raw, size=S(38))
     if badge:
-        badge_y = identity_y + (name_bbox[3] - name_bbox[1]) // 2 - badge.size[1] // 2 + S(0)
-        badge_x = min(name_bbox[2] + S(16), left_rail_x2 - badge.size[0] - S(10))
-        card.paste(badge, (badge_x, badge_y), badge)
+     badge_y = identity_y + (name_bbox[3] - name_bbox[1]) // 2 - badge.size[1] // 2
+     badge_x = name_bbox[2] + S(16)
+     card.paste(badge, (badge_x, badge_y), badge)
 
     # Stat grid
     total = wins + losses
