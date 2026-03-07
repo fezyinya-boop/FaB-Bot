@@ -341,7 +341,7 @@ def make_profile_card(
 
     fade = Image.new("L", (W, banner_h), 0)
     fd = ImageDraw.Draw(fade)
-    fd.rectangle((0, 0, W, banner_h), fill=120)
+    fd.rectangle((0, 0, W, banner_h), fill=0)
     fade = fade.filter(ImageFilter.GaussianBlur(radius=S(18)))
     fade_rgba = Image.new("RGBA", (W, banner_h), (0, 0, 0, 255))
     fade_rgba.putalpha(fade)
@@ -349,7 +349,7 @@ def make_profile_card(
     card.paste(banner, (0, 0), banner)
 
     # Main panel
-    panel_y = banner_h - S(40)
+    panel_y = banner_h - S(55)
     panel_x1 = S(260)
     panel_x2 = W - S(26)
     panel_y2 = H - S(24)
@@ -363,7 +363,7 @@ def make_profile_card(
         width=S(2),
     )
     pd.rounded_rectangle(
-        (S(28), panel_y + S(5), panel_x1 - S(24), panel_y2),
+        (S(28), panel_y + S(1), panel_x1 - S(24), panel_y2),
         radius=S(28),
         fill=(12, 12, 16, 214),
         outline=PANEL_LINE,
