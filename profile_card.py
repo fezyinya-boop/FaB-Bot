@@ -350,7 +350,7 @@ def make_profile_card(
     card.paste(banner, (0, 0), banner)
 
     # Main panel
-    panel_y = banner_h - S(85)
+    panel_y = banner_h - S(87)
     panel_x1 = S(28)
     panel_x2 = W - S(26)
     panel_y2 = H - S(24)
@@ -419,8 +419,8 @@ def make_profile_card(
     right_x = col_left + int((col_right - col_left) * 0.66)
 
     top_header_y = panel_y + S(30)
-    name_y = top_header_y + S(8)
-    name_x = left_x + S(28)
+    name_y = top_header_y + S(18)
+    name_x = left_x + S(40)
 
     draw_tracked(draw, (name_x, name_y), name_text, f_name, WHITE, S(1), stroke_width=S(2), stroke_fill=STROKE)
     name_bbox = draw.textbbox((name_x, name_y), name_text, font=f_name, stroke_width=S(2))
@@ -440,7 +440,7 @@ def make_profile_card(
     record_label_y = name_y + S(8)
     record_value_y = record_label_y + S(32)
 
-    streak_label_y = underline_y + S(18)
+    streak_label_y = underline_y + S(14)
     streak_value_y = streak_label_y + S(30)
 
     rp_glow = Image.new("RGBA", (W, H), (0, 0, 0, 0))
