@@ -362,7 +362,7 @@ def make_profile_card(
     card.paste(banner, (0, 0), banner)
 
     # Main panel
-    panel_y = banner_h - S(92)
+    panel_y = banner_h - S(95)
     panel_x1 = 0
     panel_x2 = W
     panel_y2 = H - S(24)
