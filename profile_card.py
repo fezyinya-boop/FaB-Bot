@@ -350,7 +350,7 @@ def make_profile_card(
     card.paste(banner, (0, 0), banner)
 
     # Main panel
-    panel_y = banner_h - S(90)
+    panel_y = banner_h - S(92)
     panel_x1 = 0
     panel_x2 = W
     panel_y2 = H - S(24)
@@ -421,12 +421,12 @@ def make_profile_card(
     f_value = load_font("Orbitron-VariableFont_wght.ttf", S(30))
     f_big = fit_font(draw, f"{pts} RP", "Orbitron-VariableFont_wght.ttf", max_w=S(360), start_size=S(58), min_size=S(36))
 
-    left_x = col_left + S(15)
+    left_x = col_left + S(20)
     right_x = col_left + int((col_right - col_left) * 0.78)
 
     top_header_y = panel_y + S(30)
     name_y = top_header_y + S(42)
-    name_x = left_x + S(225)
+    name_x = left_x + S(230)
 
     draw_tracked(draw, (name_x, name_y), name_text, f_name, WHITE, S(1), stroke_width=S(2), stroke_fill=STROKE)
     name_bbox = draw.textbbox((name_x, name_y), name_text, font=f_name, stroke_width=S(2))
