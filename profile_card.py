@@ -349,7 +349,7 @@ def make_profile_card(
     card.paste(banner, (0, 0), banner)
 
     # Main panel
-    panel_y = banner_h - S(80)
+    panel_y = banner_h - S(85)
     panel_x1 = S(28)
     panel_x2 = W - S(26)
     panel_y2 = H - S(24)
@@ -437,8 +437,8 @@ def make_profile_card(
     # Stat grid
     total = wins + losses
     wr = round((wins / total) * 100) if total > 0 else 0
-    left_x = col_left + S(30)
-    right_x = col_left + int((col_right - col_left) * 0.90)
+    left_x = col_left + S(60)
+    right_x = col_left + int((col_right - col_left) * 0.80)
 
     top_header_y = panel_y + S(26)
     rating_label_y = top_header_y + S(30)
