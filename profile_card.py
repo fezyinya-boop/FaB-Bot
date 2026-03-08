@@ -363,17 +363,16 @@ veil_rgba.putalpha(veil)
 card.paste(veil_rgba, (0, banner_h - S(20)), veil_rgba)
 
     # Side vignettes on banner
-    side_vig = Image.new("RGBA", (W, banner_h), (0, 0, 0, 0))
-    sv = ImageDraw.Draw(side_vig)
-    vig_w = S(180)
-    for i in range(vig_w):
-        t = 1 - (i / vig_w)
-        alpha = int(210 * (t ** 1.6))
-        sv.line((i, 0, i, banner_h), fill=(0, 0, 0, alpha))
-        sv.line((W - 1 - i, 0, W - 1 - i, banner_h), fill=(0, 0, 0, alpha))
-    banner = Image.alpha_composite(banner, side_vig)
-
-    card.paste(banner, (0, 0), banner)
+side_vig = Image.new("RGBA", (W, banner_h), (0, 0, 0, 0))
+sv = ImageDraw.Draw(side_vig)
+vig_w = S(180)
+for i in range(vig_w):
+    t = 1 - (i / vig_w)
+    alpha = int(210 * (t ** 1.6))
+    sv.line((i, 0, i, banner_h), fill=(0, 0, 0, alpha))
+    sv.line((W - 1 - i, 0, W - 1 - i, banner_h), fill=(0, 0, 0, alpha))
+banner = Image.alpha_composite(banner, side_vig)
+card.paste(banner, (0, 0), banner)
 
     # Main panel
     panel_y = banner_h - S(98)
@@ -551,4 +550,4 @@ card.paste(veil_rgba, (0, banner_h - S(20)), veil_rgba)
     buf = io.BytesIO()
     final.save(buf, "PNG", optimize=True)
     buf.seek(0)
- return buf
+    return buf
