@@ -146,7 +146,7 @@ def init_db():
 # ===================== Rank Definitions and Helpers =====================
 RANKS = [
     {"name": "DIAMOND", "emoji": "<:Diamond:1477427100666433572>", "min": 1800, "color": 0x00ffff},
-    {"name": "PLATINUM", "emoji": "<:Platinum:1477426802317201411>", "min": 1600, "color": 0xe5e4e2},
+    {"name": "PLATINUM", "emoji": "<:Platinum:1477426802317201411>", "min": 1600, "color": 0x7FE0FF},
     {"name": "GOLD", "emoji": "<:Gold:1477426026945577000>", "min": 1400, "color": 0xE3C56A},
     {"name": "SILVER", "emoji": "<:Silver:1477427675067842588>", "min": 1200, "color": 0xC9D3E3},
     {"name": "BRONZE", "emoji": "<:rookie:1476994147935322265>", "min": 0, "color": 0xcd7f32}
