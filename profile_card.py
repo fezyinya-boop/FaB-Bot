@@ -586,6 +586,25 @@ def make_profile_card(
         width=S(2),
                                    )
 
+    # Opaque black cap under the top border so it doesn't look see-through
+    bd.rectangle(
+        (inset + S(8), inset, W - inset - S(8), inset + S(10)),
+        fill=(0, 0, 0, 255),
+    )
+
+    # Solid top gold band
+    bd.rectangle(
+        (inset + S(10), inset, W - inset - S(10), inset + S(6)),
+        fill=(255, 200, 90, 255),
+    )
+
+    # Bright top highlight
+    bd.line(
+        (inset + S(14), inset + S(1), W - inset - S(14), inset + S(1)),
+        fill=(255, 245, 200, 180),
+        width=S(2),
+    )
+
     card = Image.alpha_composite(card, border_overlay)
     
     # bottom edge vignette
