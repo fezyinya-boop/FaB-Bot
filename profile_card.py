@@ -543,18 +543,27 @@ def make_profile_card(
             card.paste(next_badge, (col_left + bar_w + S(18), bar_y + bar_h // 2 - next_badge.size[1] // 2), next_badge)
 
 
+
     # Full gold frame border around the entire card / banner area
     border_overlay = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     bd = ImageDraw.Draw(border_overlay)
 
-    inset = S(14)
+    inset = S(6)
 
-    # Main visible border
+    # Outer gold frame
     bd.rounded_rectangle(
         (inset, inset, W - inset, H - inset),
         radius=S(24),
         outline=(255, 200, 90, 255),
-        width=S(8),
+        width=S(10),
+    )
+
+    # Inner dark bevel
+    bd.rounded_rectangle(
+        (inset + S(6), inset + S(6), W - inset - S(6), H - inset - S(6)),
+        radius=S(20),
+        outline=(0, 0, 0, 210),
+        width=S(4),
     )
 
     # Bright top metallic edge
@@ -562,19 +571,6 @@ def make_profile_card(
         (inset + S(18), inset + S(3), W - inset - S(18), inset + S(3)),
         fill=(255, 245, 200, 180),
         width=S(3),
-    )
-
-    bd.rounded_rectangle(
-       (inset, inset, W - inset, H - inset),
-       radius=S(24),
-       fill=(255,200,90,255)
-    )
-
-    bd.rounded_rectangle(
-       (inset + S(3), inset + S(3), W - inset - S(3), H - inset - S(3)),
-       radius=S(22),
-       outline=(0,0,0,200),
-       width=S(3)
     )
 
     card = Image.alpha_composite(card, border_overlay)
