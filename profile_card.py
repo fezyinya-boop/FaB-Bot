@@ -333,7 +333,7 @@ def make_profile_card(
             if os.path.basename(bg_path) == "archive_banner.png":
                 bg = center_crop_to_fill(bg, W, banner_h)
                 bg = bg.crop((0, int(banner_h*0.07), W, banner_h + int(banner_h*0.08))).resize((W, banner_h), Image.Resampling.LANCZOS)
-                banner = bg
+                banner = bg.convert("RGB").convert("RGBA")
             else:
                 banner = apply_anime_arena_background(banner, bg, focus_right=True)
 
@@ -342,7 +342,7 @@ def make_profile_card(
 
     fade = Image.new("L", (W, banner_h), 0)
     fd = ImageDraw.Draw(fade)
-    fd.rectangle((0, 0, W, banner_h), fill=255)
+    fd.rectangle((0, 0, W, banner_h), fill=0)
     fade = fade.filter(ImageFilter.GaussianBlur(radius=S(18)))
     fade_rgba = Image.new("RGBA", (W, banner_h), (0, 0, 0, 255))
     fade_rgba.putalpha(fade)
