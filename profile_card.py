@@ -7,6 +7,7 @@ import os
 import re
 from functools import lru_cache
 from typing import Optional, Tuple
+import math
 
 RGBA = Tuple[int, int, int, int]
 RGB = Tuple[int, int, int]
@@ -80,6 +81,29 @@ def clamp_text(draw: ImageDraw.ImageDraw, text: str, font: ImageFont.ImageFont, 
         t = t[:-1]
     return (t + ell) if t else ell
 
+
+
+
+def draw_gear_background(draw, center, inner_radius, outer_radius, teeth_count, color, offset_deg=0):
+    cx, cy = center
+    for i in range(teeth_count):
+        # Calculate angles for the base and top of each gear tooth
+        angle = (i * 360 / teeth_count) + offset_deg
+        # Convert to radians for math functions
+        rad_base_left = math.radians(angle - 5)
+        rad_base_right = math.radians(angle + 5)
+        rad_top_left = math.radians(angle - 3)
+        rad_top_right = math.radians(angle + 3)
+        
+        # Define the four points of the trapezoidal tooth
+        points = [
+            (cx + inner_radius * math.cos(rad_base_left), cy + inner_radius * math.sin(rad_base_left)),
+            (cx + outer_radius * math.cos(rad_top_left), cy + outer_radius * math.sin(rad_top_left)),
+            (cx + outer_radius * math.cos(rad_top_right), cy + outer_radius * math.sin(rad_top_right)),
+            (cx + inner_radius * math.cos(rad_base_right), cy + inner_radius * math.sin(rad_base_right))
+        ]
+        draw.polygon(points, fill=color)
+                         
 
 
 def wrap_text(draw: ImageDraw.ImageDraw, text: str, font: ImageFont.ImageFont, max_w: int, max_lines: int = 3) -> list[str]:
@@ -519,6 +543,35 @@ def make_profile_card(
     ring_glow = ring_glow.filter(ImageFilter.GaussianBlur(radius=S(4)))
     card = Image.alpha_composite(card, ring_glow)
     draw = ImageDraw.Draw(card)
+
+    # --- Inside make_profile_card, locate the Avatar block ---
+cx = av_x + av_size // 2
+cy = av_y + av_size // 2
+
+# ... (after the 'glow' composite logic) ...
+
+# 1. Draw the "Gear" style teeth behind the ring
+# Use a slightly darker gold for the teeth to provide depth
+gear_gold = (210, 160, 60, 255) 
+draw_gear_background(
+    draw, 
+    center=(cx, cy), 
+    inner_radius=av_size // 2 + S(2), 
+    outer_radius=av_size // 2 + S(12), 
+    teeth_count=12, 
+    color=gear_gold,
+    offset_deg=15  # Change this to 'rotate' the gear in the static image
+)
+
+# 2. Add a circular shadow just under the teeth for extra "pop"
+draw.ellipse(
+    (av_x - S(6), av_y - S(6), av_x + av_size + S(6), av_y + av_size + S(6)),
+    outline=(0, 0, 0, 80),
+    width=S(2)
+)
+
+# ... (Continue with the existing 'main gold ring' and 'avatar paste' logic) ...
+
 
     # main gold ring
     draw.ellipse(
