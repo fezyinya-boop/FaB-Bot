@@ -2268,7 +2268,7 @@ async def profile(interaction: discord.Interaction, member: discord.Member = Non
         rank_color = (230, 160, 30)
 
     try:
-    avatar_img = await fetch_avatar(member.display_avatar.url)
+        avatar_img = await fetch_avatar(member.display_avatar.url)
     if avatar_img:
         buf_av = io.BytesIO()
         avatar_img.save(buf_av, "PNG")
