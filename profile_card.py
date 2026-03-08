@@ -681,7 +681,7 @@ def make_profile_card(
     if badge:
         # Vertically center badge on the actual rendered text
         text_center_y = name_draw_y + (name_bbox[3] - name_bbox[1]) // 2
-        badge_y = text_center_y - badge.size[1] // 2 + S(6)
+        badge_y = text_center_y - badge.size[1] // 2 + S(12)
         badge_x = name_x + tracked_name_w + S(14)
         card.paste(badge, (badge_x, badge_y), badge)
 
