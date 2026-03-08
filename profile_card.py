@@ -173,54 +173,71 @@ def center_crop_to_fill(img, target_w, target_h):
     return img.resize((target_w, target_h), Image.Resampling.LANCZOS)
 
 
-
 def draw_tracked_name(
     base_img,
     text_value,
     pos,
     font,
     tracking,
-    rc, # ADDED: Pass the rank color here
+    rc,  # Added: the rank color tuple (R, G, B)
     fill=(245, 247, 252, 255),
-    # ... other existing arguments ...
+    stroke_fill=(0, 0, 0, 0),
+    stroke_width=0,
+    glow_fill=(0, 0, 0, 0),
+    underline_fill=(255, 200, 90, 0),
+    underline_offset=58,
+    underline_width=0,
 ):
-    # [Keep all your existing width/tracking calculations exactly as they are]
-    # ...
-    
+    x, y = pos
+    chars = list(text_value)
+    widths = []
+    total_w = 0
+
+    for i, ch in enumerate(chars):
+        w = font.getlength(ch)
+        widths.append(w)
+        total_w += w
+        if i < len(chars) - 1:
+            total_w += tracking
+
     d = ImageDraw.Draw(base_img)
     cx = x
-    
-    # Create the gradient colors based on rank_color (rc)
-    top_col = tuple(min(255, c + 70) for c in rc) # Brighter
-    bot_col = tuple(max(0, c - 30) for c in rc)    # Deeper
-    
-    for i, ch in enumerate(chars):
-        # 1. Keep your tiny soft shadow exactly where it is
-        d.text((cx + 1, y + 1), ch, font=font, fill=(0, 0, 0, 85))
 
-        # 2. Draw the character with a vertical gradient
-        # We create a small temporary mask for just this one character
-        char_w = int(font.getlength(ch)) + 2
-        char_h = int(font.size * 1.2)
-        char_mask = Image.new("L", (char_w, char_h), 0)
+    # Create gradient stops: Bright highlight at top, deep tone at bottom
+    top_col = tuple(min(255, c + 80) for c in rc)
+    bot_col = tuple(max(0, c - 40) for c in rc)
+
+    for i, ch in enumerate(chars):
+        # 1. Subtle drop shadow for legibility
+        d.text((cx + S(2), y + S(2)), ch, font=font, fill=(0, 0, 0, 150))
+
+        # 2. Character Gradient Masking
+        # Get individual character size
+        bbox = font.getbbox(ch)
+        cw = int(widths[i]) + 2
+        ch_h = int(bbox[3] - bbox[1]) + 4
+        
+        # Create a mask of the character
+        char_mask = Image.new("L", (cw, ch_h), 0)
         md = ImageDraw.Draw(char_mask)
         md.text((0, 0), ch, font=font, fill=255)
-        
-        # Create the character gradient
-        char_grad = Image.new("RGBA", (char_w, char_h))
+
+        # Create the vertical gradient for this character's height
+        char_grad = Image.new("RGBA", (cw, ch_h))
         cd = ImageDraw.Draw(char_grad)
-        for gy in range(char_h):
-            # Interpolate between top_col and bot_col
-            pct = gy / char_h
+        for gy in range(ch_h):
+            pct = gy / max(1, ch_h - 1)
+            # Mix top_col and bot_col
             curr_c = tuple(int(top_col[j] + (bot_col[j] - top_col[j]) * pct) for j in range(3))
-            cd.line([(0, gy), (char_w, gy)], fill=curr_c + (255,))
-            
-        # Paste character onto base_img using your existing cx/y coordinates
+            cd.line([(0, gy), (cw, gy)], fill=curr_c + (255,))
+
+        # Composite the character onto the card
         base_img.paste(char_grad, (int(cx), int(y)), mask=char_mask)
 
         cx += widths[i] + (tracking if i < len(chars) - 1 else 0)
 
     return int(total_w)
+
 
 
 
@@ -664,6 +681,7 @@ def make_profile_card(
 
     tracked_name_w = draw_tracked_name(
       card, name_text, (name_x, name_y - S(5)), f_name, name_tracking,
+      rc=rc, # Add this line here
       fill=(245, 247, 252, 255),
       stroke_fill=(0, 0, 0, 0),
       stroke_width=0,
@@ -672,6 +690,7 @@ def make_profile_card(
       underline_offset=S(52),
       underline_width=0,
     ) 
+
 
     name_draw_y = name_y - S(5)  # actual Y the text is drawn at
     name_bbox = draw.textbbox((name_x, name_draw_y), name_text, font=f_name, stroke_width=S(2))
