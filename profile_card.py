@@ -564,12 +564,17 @@ def make_profile_card(
         width=S(3),
     )
 
-    # Soft inner glow line
     bd.rounded_rectangle(
-        (inset + S(3), inset + S(3), W - inset - S(3), H - inset - S(3)),
-        radius=S(21),
-        outline=(255, 255, 255, 40),
-        width=S(1),
+       (inset, inset, W - inset, H - inset),
+       radius=S(24),
+       fill=(255,200,90,255)
+    )
+
+   bd.rounded_rectangle(
+       (inset + S(3), inset + S(3), W - inset - S(3), H - inset - S(3)),
+       radius=S(22),
+       outline=(0,0,0,200),
+       width=S(3)
     )
 
     card = Image.alpha_composite(card, border_overlay)
