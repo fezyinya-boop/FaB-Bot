@@ -387,7 +387,13 @@ def make_profile_card(
         outline=PANEL_LINE,
         width=S(2),
     )
-    # Square off the top by extending full width - removes rounded top corners
+
+    # Gold divider line under banner
+    draw.line((0, panel_y, W, panel_y), fill=(rc[0], rc[1], rc[2], 180), width=S(2))
+    draw.line((0, panel_y + S(1), W, panel_y + S(1)), fill=(255, 255, 255, 30), width=S(1))
+   
+
+# Square off the top by extending full width - removes rounded top corners
     pd.rectangle((0, panel_y, W, panel_y + S(56)), fill=PANEL_FILL)
     pd.line((0, panel_y, W, panel_y), fill=PANEL_LINE, width=S(2))
     # Square off left and right side edges near top
