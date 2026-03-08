@@ -542,6 +542,38 @@ def make_profile_card(
         if next_badge:
             card.paste(next_badge, (col_left + bar_w + S(18), bar_y + bar_h // 2 - next_badge.size[1] // 2), next_badge)
 
+
+    # Full gold frame border around the entire card / banner area
+    border_overlay = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    bd = ImageDraw.Draw(border_overlay)
+
+    inset = S(14)
+
+    # Main visible border
+    bd.rounded_rectangle(
+        (inset, inset, W - inset, H - inset),
+        radius=S(24),
+        outline=(255, 200, 90, 255),
+        width=S(8),
+    )
+
+    # Bright top metallic edge
+    bd.line(
+        (inset + S(18), inset + S(3), W - inset - S(18), inset + S(3)),
+        fill=(255, 245, 200, 180),
+        width=S(3),
+    )
+
+    # Soft inner glow line
+    bd.rounded_rectangle(
+        (inset + S(3), inset + S(3), W - inset - S(3), H - inset - S(3)),
+        radius=S(21),
+        outline=(255, 255, 255, 40),
+        width=S(1),
+    )
+
+    card = Image.alpha_composite(card, border_overlay)
+    
     # bottom edge vignette
     vignette = Image.new("L", (W, H), 0)
     vd = ImageDraw.Draw(vignette)
