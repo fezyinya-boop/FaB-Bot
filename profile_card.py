@@ -348,6 +348,19 @@ def make_profile_card(
     fade_rgba.putalpha(fade)
     banner = Image.alpha_composite(banner, fade_rgba)
 
+    # Soft transition veil from banner into card
+    veil_h = S(120)
+    veil = Image.new("L", (W, veil_h), 0)
+    vd = ImageDraw.Draw(veil)
+
+for y in range(veil_h):
+    alpha = int(180 * (y / veil_h))
+    vd.line((0, y, W, y), fill=alpha)
+
+veil_rgba = Image.new("RGBA", (W, veil_h), (0, 0, 0, 255))
+veil_rgba.putalpha(veil)
+card.paste(veil_rgba, (0, banner_h - S(20)), veil_rgba)
+
     # Side vignettes on banner
     side_vig = Image.new("RGBA", (W, banner_h), (0, 0, 0, 0))
     sv = ImageDraw.Draw(side_vig)
