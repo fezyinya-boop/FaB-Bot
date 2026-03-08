@@ -389,7 +389,7 @@ def make_profile_card(
     )
 
     # Gold divider line under banner
-    draw.line((0, panel_y, W, panel_y), fill=(rc[0], rc[1], rc[2], 220), width=S(5))
+    draw.line((0, panel_y, W, panel_y), fill=(rc[0], rc[1], rc[2], 240), width=S(8))
     draw.line((0, panel_y + S(1), W, panel_y + S(1)), fill=(255, 255, 255, 30), width=S(1))
    
 
