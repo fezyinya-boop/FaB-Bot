@@ -573,10 +573,10 @@ def make_profile_card(
     av = avatar_img.resize((av_size, av_size), Image.Resampling.LANCZOS)
 
 
-    # Outer wide soft rim - more passes, higher opacity
-    for offset in range(S(22), 0, -S(2)):
-        a = int(110 * (1 - offset / S(22)) ** 1.4)
-        
+    mask = soft_circle_mask(av_size, feather=S(2))
+    av_circ = Image.new("RGBA", (av_size, av_size), (0, 0, 0, 0))
+    av_circ.paste(av, (0, 0), mask=mask)
+    card.paste(av_circ, (av_x, av_y), av_circ)
 
     # Main gold ring
     draw.ellipse(
