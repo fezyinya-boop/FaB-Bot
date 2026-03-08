@@ -695,7 +695,7 @@ def make_profile_card(
     record_label_y = name_y
     record_value_y = record_label_y + S(34)
     streak_label_y = rating_label_y + S(2)
-    streak_value_y = streak_label_y + S(32)
+    streak_value_y = streak_label_y + S(38)
 
     # Divider between name row and rating row
     divider_y = name_y + S(88)
