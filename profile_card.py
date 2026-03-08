@@ -217,26 +217,7 @@ def draw_tracked_name(base_img, text_value, pos, font, tracking, fill=(236, 236,
         if i < len(chars) - 1:
             total_w += tracking
 
-    # main metallic name layer
-    d = ImageDraw.Draw(base_img)
-    cx = x
-    for i, ch in enumerate(chars):
-        # subtle shadow for depth
-        d.text(
-            (cx, y + 2),
-            ch,
-            font=font,
-            fill=(0, 0, 0, 110),
-        )
-        # main silver text
-        d.text(
-            (cx, y),
-            ch,
-            font=font,
-            fill=(245, 245, 248, 255),
-            stroke_width=2,
-            stroke_fill=(0, 0, 0, 170),
-        )
+    
         # soft metallic highlight
         d.text(
             (cx, y - 1),
