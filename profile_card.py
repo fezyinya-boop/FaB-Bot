@@ -476,8 +476,8 @@ def make_profile_card(
     if avatar_img is None:
         avatar_img = Image.new("RGBA", (av_size, av_size), (28, 28, 34, 255))
     else:
-        avatar_img = center_crop_square(avatar_img.convert("RGBA"))
-
+        avatar_img = center_crop_square(avatar_img.convert("RGB").convert("RGBA"))
+    
     av = avatar_img.resize((av_size, av_size), Image.Resampling.LANCZOS)
     glow = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     gd = ImageDraw.Draw(glow)
