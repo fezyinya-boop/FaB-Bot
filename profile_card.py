@@ -507,7 +507,7 @@ def make_profile_card(
         sv.line((i, 0, i, banner_h), fill=(0, 0, 0, alpha))
         sv.line((W - 1 - i, 0, W - 1 - i, banner_h), fill=(0, 0, 0, alpha))
     banner = Image.alpha_composite(banner, side_vig)
-    card.paste(banner, (0, S(12)))
+    card.paste(banner, (0, 0))
 
     # -------------------------------------------------------
     # Main panel
@@ -572,25 +572,7 @@ def make_profile_card(
 
     av = avatar_img.resize((av_size, av_size), Image.Resampling.LANCZOS)
 
-    # Rank-colored ambient glow behind avatar - subtle, not overpowering
-    glow = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    gd = ImageDraw.Draw(glow)
-    cx = av_x + av_size // 2
-    cy = av_y + av_size // 2
-    for r in range(S(160), 0, -S(10)):
-        a = int(28 * (1 - r / S(160)) ** 2)
-        gd.ellipse((cx - r, cy - r, cx + r, cy + r), fill=(rc[0], rc[1], rc[2], a))
-    card = Image.alpha_composite(card, glow)
-    draw = ImageDraw.Draw(card)
 
-    mask = soft_circle_mask(av_size, feather=S(2))
-    av_circ = Image.new("RGBA", (av_size, av_size), (0, 0, 0, 0))
-    av_circ.paste(av, (0, 0), mask=mask)
-    card.paste(av_circ, (av_x, av_y), av_circ)
-
-    # Rim-light: strong rank-color halo around avatar (prestige effect)
-    rim_light = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    rl = ImageDraw.Draw(rim_light)
     # Outer wide soft rim - more passes, higher opacity
     for offset in range(S(22), 0, -S(2)):
         a = int(110 * (1 - offset / S(22)) ** 1.4)
