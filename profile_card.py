@@ -534,14 +534,6 @@ def make_profile_card(
         width=S(2),
     )
 
-    # Inner dark bevel
-    bd.rounded_rectangle(
-        (inset + S(6), inset + S(6), W - inset - S(6) - 1, H - inset - S(6) - 1),
-        radius=S(20),
-        outline=(0, 0, 0, 210),
-        width=S(4),
-    )
-
     card = Image.alpha_composite(card, border_overlay)
     
     # bottom edge vignette
