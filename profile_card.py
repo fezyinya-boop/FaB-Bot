@@ -507,7 +507,7 @@ def make_profile_card(
         sv.line((i, 0, i, banner_h), fill=(0, 0, 0, alpha))
         sv.line((W - 1 - i, 0, W - 1 - i, banner_h), fill=(0, 0, 0, alpha))
     banner = Image.alpha_composite(banner, side_vig)
-    card.paste(banner, (0, S(8)))
+    card.paste(banner, (0, S(12)))
 
     # -------------------------------------------------------
     # Main panel
@@ -681,7 +681,7 @@ def make_profile_card(
     if badge:
         # Vertically center badge on the actual rendered text
         text_center_y = name_draw_y + (name_bbox[3] - name_bbox[1]) // 2
-        badge_y = text_center_y - badge.size[1] // 2 + S(12)
+        badge_y = text_center_y - badge.size[1] // 2 + S(15)
         badge_x = name_x + tracked_name_w + S(14)
         card.paste(badge, (badge_x, badge_y), badge)
 
