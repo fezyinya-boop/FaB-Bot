@@ -13,6 +13,7 @@ from tabulate import tabulate
 import urllib.parse
 import aiohttp
 import time 
+import io
 
 # --- Config & Secrets ---
 TOKEN = os.environ["DISCORD_TOKEN"]
