@@ -2268,8 +2268,12 @@ async def profile(interaction: discord.Interaction, member: discord.Member = Non
         rank_color = (230, 160, 30)
 
     try:
-        avatar_img = await fetch_avatar(member.display_avatar.url)
-        print(f"Avatar fetched: {avatar_img}")
+    avatar_img = await fetch_avatar(member.display_avatar.url)
+    if avatar_img:
+        buf_av = io.BytesIO()
+        avatar_img.save(buf_av, "PNG")
+        buf_av.seek(0)
+        avatar_img = Image.open(buf_av).copy()
     except Exception as e:
         print(f"Avatar fetch failed: {e}")
         avatar_img = None
