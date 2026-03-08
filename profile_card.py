@@ -325,13 +325,13 @@ def apply_carbon_fiber(base: Image.Image, p_x1: int, p_y1: int, p_x2: int, p_y2:
     Panel base is lifted slightly from pure black so the weave has contrast to work against.
     """
     W, H = base.size
-    t = scale_fn(19)  # larger tile = more visible weave structure
+    t = scale_fn(24)  # larger tile = more visible weave structure
 
     tile = Image.new("RGBA", (t, t), (0, 0, 0, 0))
     td = ImageDraw.Draw(tile)
 
     # Lift cell fill slightly above pure black so weave is visible
-    td.rectangle((0, 0, t - 1, t - 1), fill=(255, 255, 255, 12))
+    td.rectangle((0, 0, t - 1, t - 1), fill=(255, 255, 255, 24))
     # Hard dark grid lines forming the weave borders
     td.line([(0, 0), (t - 1, 0)], fill=(0, 0, 0, 140), width=1)
     td.line([(0, 0), (0, t - 1)], fill=(0, 0, 0, 140), width=1)
@@ -681,7 +681,7 @@ def make_profile_card(
     if badge:
         # Vertically center badge on the actual rendered text
         text_center_y = name_draw_y + (name_bbox[3] - name_bbox[1]) // 2
-        badge_y = text_center_y - badge.size[1] // 2
+        badge_y = text_center_y - badge.size[1] // 2 + 4
         badge_x = name_x + tracked_name_w + S(14)
         card.paste(badge, (badge_x, badge_y), badge)
 
