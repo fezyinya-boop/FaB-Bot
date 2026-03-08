@@ -456,7 +456,7 @@ def make_profile_card(
     tracked_name_w = text_width(draw, name_text, f_name) + S(9) * (len(name_text) - 1)
     badge = get_rank_badge(current_rank_raw, size=S(47))
     if badge:
-        badge_y = name_y + (name_bbox[3] - name_bbox[1]) // 2 - badge.size[1] // 2 + 4
+        badge_y = name_y + (name_bbox[3] - name_bbox[1]) // 2 - badge.size[1] // 2 + 10
         badge_x = name_x + tracked_name_w + S(14)
         card.paste(badge, (badge_x, badge_y), badge)
 
