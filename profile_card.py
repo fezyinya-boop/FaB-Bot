@@ -342,7 +342,7 @@ def make_profile_card(
 
     fade = Image.new("L", (W, banner_h), 0)
     fd = ImageDraw.Draw(fade)
-    fd.rectangle((0, 0, W, banner_h), fill=0)
+    fd.rectangle((0, 0, W, banner_h), fill=255)
     fade = fade.filter(ImageFilter.GaussianBlur(radius=S(18)))
     fade_rgba = Image.new("RGBA", (W, banner_h), (0, 0, 0, 255))
     fade_rgba.putalpha(fade)
@@ -556,7 +556,7 @@ def make_profile_card(
         (inset, inset, W - inset, H - inset),
         radius=S(24),
         outline=(255, 200, 90, 255),
-        width=S(10),
+        width=S(6),
     )
 
 # Fill top border solid - overrides the transparent rounded corners at top
