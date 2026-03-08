@@ -7,7 +7,7 @@ import os
 import re
 from functools import lru_cache
 from typing import Optional, Tuple
-
+ 
 RGBA = Tuple[int, int, int, int]
 RGB = Tuple[int, int, int]
 
