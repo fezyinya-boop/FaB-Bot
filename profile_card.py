@@ -173,22 +173,16 @@ def center_crop_to_fill(img, target_w, target_h):
     return img.resize((target_w, target_h), Image.Resampling.LANCZOS)
 
 
-def draw_tracked_name(base_img, text_value, pos, font, tracking,
+ def draw_tracked_name(base_img, text_value, pos, font, tracking,
                       fill=(236, 236, 240, 255),
                       stroke_fill=(0, 0, 0, 190), stroke_width=3,
                       glow_fill=(255, 220, 170, 46), underline_fill=(255, 200, 90, 0),
                       underline_offset=58, underline_width=2):
-    """
-    Renders username with brushed-silver metallic sheen:
-    - Deep drop shadow for lift
-    - Main silver body
-    - Bright specular highlight offset upward
-    - Secondary shimmer pass for brushed-metal feel
-    """
     x, y = pos
     chars = list(text_value)
     widths = []
     total_w = 0
+
     for i, ch in enumerate(chars):
         w = font.getlength(ch)
         widths.append(w)
@@ -200,18 +194,22 @@ def draw_tracked_name(base_img, text_value, pos, font, tracking,
     cx = x
 
     for i, ch in enumerate(chars):
-        # Soft shadow - just enough for lift, not dark enough to bleed through
-        d.text((cx + 2, y + 3), ch, font=font, fill=(0, 0, 0, 80))
-        d.text((cx + 1, y + 1), ch, font=font, fill=(0, 0, 0, 40))
-        # Main silver body - near-white bright silver, very light stroke
-        d.text((cx, y), ch, font=font,
-               fill=(248, 250, 255, 255),
-               stroke_width=stroke_width,
-               stroke_fill=(130, 138, 158, 70))
-        # Strong specular highlight - top edge
-        d.text((cx, y - 1), ch, font=font, fill=(255, 255, 255, 200))
-        # Secondary shimmer
-        d.text((cx - 1, y), ch, font=font, fill=(210, 220, 240, 55))
+        # very light shadow only
+        d.text((cx + 2, y + 2), ch, font=font, fill=(0, 0, 0, 55))
+
+        # main bright silver body
+        d.text(
+            (cx, y),
+            ch,
+            font=font,
+            fill=(245, 247, 252, 255),
+            stroke_width=max(1, stroke_width),
+            stroke_fill=(90, 96, 110, 110),
+        )
+
+        # metallic top highlight
+        d.text((cx, y - 1), ch, font=font, fill=(255, 255, 255, 170))
+
         cx += widths[i] + (tracking if i < len(chars) - 1 else 0)
 
     ul_y = y + underline_offset
@@ -322,7 +320,7 @@ def apply_carbon_fiber(base: Image.Image, p_x1: int, p_y1: int, p_x2: int, p_y2:
     Panel base is lifted slightly from pure black so the weave has contrast to work against.
     """
     W, H = base.size
-    t = scale_fn(16)  # larger tile = more visible weave structure
+    t = scale_fn(19)  # larger tile = more visible weave structure
 
     tile = Image.new("RGBA", (t, t), (0, 0, 0, 0))
     td = ImageDraw.Draw(tile)
