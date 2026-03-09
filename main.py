@@ -728,12 +728,12 @@ async def intro(ctx):
 
     matchmaking = (
         f"• Head over to <#{MATCHMAKING_CHANNEL_ID}>\n"
-        "• Use `!challenge @user` to initiate a duel.\n"
+        "• Use `/duel @user` to initiate a duel or /match to post a public lobby.\n"
         "• Select your decks and report results via the buttons provided."
     )
     embed.add_field(name="⚔️ MATCHMAKING 101", value=matchmaking, inline=False)
 
-    embed.set_footer(text=f"Arena Agent v3.0 • {total_matches} matches recorded • Auto-Elo Enabled")
+    embed.set_footer(text=f"Arena Guide v3.0 • {total_matches} matches recorded • Auto-Elo Enabled")
 
     # --- THE INTERACTIVE BUTTONS ---
     view = discord.ui.View()
@@ -1016,123 +1016,6 @@ async def rules(ctx):
 
     
 
-@bot.command(aliases=['challenge'])
-async def duel(ctx, opponent: discord.Member):
-    """Issues a formal challenge to another player."""
-    if opponent == ctx.author: 
-        return await ctx.send("❌ You can't duel yourself! (As much as we all love a good practice session).")
-    
-    if opponent.bot:
-        return await ctx.send("❌ The bots are currently on strike and refuse to duel mortals.")
-
-    view = ChallengeView(ctx.author, opponent)
-    embed = discord.Embed(
-        title="⚔️ CHALLENGE ISSUED",
-        description=f"{opponent.mention}, **{ctx.author.display_name}** has challenged you to a duel!\n\nDo you accept your fate?",
-        color=0x7289da
-    )
-    embed.set_footer(text="Arena Guide • Awaiting Response")
-    await ctx.send(embed=embed, view=view)
-
-
-
-@bot.command(name="match")
-async def match(ctx):
-    """Starts an open lobby that anyone can join."""
-    view = OpenMatchView(ctx.author)
-    embed = discord.Embed(
-        title="🏟️ OPEN LOBBY",
-        description=(
-            f"**{ctx.author.display_name}** is looking for an opponent!\n"
-            "Click the button below to join the arena."
-        ),
-        color=0x2ecc71
-    )
-    embed.set_footer(text="This lobby will expire in 10 minutes.")
-    msg = await ctx.send(embed=embed, view=view)
-    # Cache IDs so on_timeout can disable the lobby cleanly
-    view.guild_id = ctx.guild.id if ctx.guild else None
-    view.channel_id = ctx.channel.id
-    view.message_id = msg.id
-
-
-
-@bot.command()
-async def rank(ctx, member: discord.Member = None):
-    member = member or ctx.author
-    
-    # Fetch fresh data from DB (0:id, 1:name, 2:pts, 3:wins, 4:losses, 5:streak)
-    data = get_or_create_user(member.id, member.display_name)
-    pts = data[2]
-    
-    # Get current rank info (color, name, min requirements)
-    r_info = get_rank_info(pts)
-    
-    # --- Progress Bar Logic ---
-    next_rank = next((r for r in reversed(RANKS) if r['min'] > pts), None)
-    if next_rank:
-        total_needed = next_rank['min'] - r_info['min']
-        current_progress = pts - r_info['min']
-        # Calculate percentage (0-10 for the bar, 0-100 for the text)
-        percent = min(max(int((current_progress / total_needed) * 10), 0), 10)
-        bar = "▰" * percent + "▱" * (10 - percent)
-        progress_val = f"{bar} {int((current_progress/total_needed)*100)}% to {next_rank['emoji']}"
-    else:
-        progress_val = "▰▰▰▰▰▰▰▰▰▰ **ASCENDED**"
-
-    # --- Build the Embed ---
-    embed = discord.Embed(title=f"{member.display_name}", color=r_info["color"])
-    embed.add_field(name="🏆 RATING", value=f"{pts} RP", inline=True)
-    embed.add_field(name="🔥 STREAK", value=f"{data[5]} Wins", inline=True)
-    
-    # Win Rate Calc: data[3] is wins, data[4] is losses
-    total_games = data[3] + data[4]
-    win_rate = round((data[3] / total_games) * 100) if total_games > 0 else 0
-    
-    embed.add_field(name="⚔️ RECORD", value=f"{data[3]}W - {data[4]}L ({win_rate}%)", inline=False)
-    embed.add_field(name="🚀 PROGRESS", value=progress_val, inline=False)
-    
-    embed.set_thumbnail(url=member.display_avatar.url)
-    await ctx.send(embed=embed)
-
-
-@bot.command()
-async def history(ctx, member: discord.Member = None):
-    member = member or ctx.author
-    data = get_or_create_user(member.id, member.display_name)
-    raw_hist = data[6].split(",") if data[6] else []
-    
-    if not raw_hist: 
-        return await ctx.send(f"No match history for {member.display_name}.")
-    
-    # --- FIXED INDENTATION START ---
-    display = ""
-    for entry in reversed(raw_hist):
-        parts = entry.split(":")
-        
-        # Check if the entry has the modern format (Result:Opponent:Points)
-        if len(parts) >= 3: 
-            res, opp, rp = parts[0], parts[1], parts[2]
-            circle = "🟢" if res == "W" else "🔴"
-            # Logic for the prefix (+ or -)
-            prefix = "+" if res == "W" else "-"
-            display += f"{circle} **{res}** vs {opp} (`{prefix}{rp} RP`)\n"
-            
-        # Fallback for old/legacy entries
-        elif len(parts) == 1 and parts[0]: 
-            res = parts[0]
-            circle = "🟢" if res == "W" else "🔴"
-            display += f"{circle} **{res}** (Legacy Match)\n"
-
-    if not display:
-        display = "No recent matches recorded."
-        
-    # --- FIXED INDENTATION END ---
-
-    embed = discord.Embed(title=f"📜 {member.display_name}'s History", description=display, color=0x3498db)
-    embed.set_footer(text="Last 10 Matches")
-    await ctx.send(embed=embed)
-
 
 async def refresh_leaderboard(guild):
     try:
@@ -1196,74 +1079,6 @@ async def refresh_leaderboard(guild):
 
     except Exception as e:
         print(f"❌ Leaderboard Refresh Error: {e}")
-        
-        
-
-
-@bot.command()
-@commands.has_permissions(manage_messages=True)
-async def settle(ctx, winner: discord.Member, loser: discord.Member):
-    conn = get_conn()
-    c = conn.cursor()
-
-    # 1. DATABASE CLEANUP: Find and close any 'active' match between these two
-    c.execute("""
-        SELECT id, p1_deck, p2_deck FROM matches 
-        WHERE ((p1_id = ? AND p2_id = ?) OR (p1_id = ? AND p2_id = ?))
-        AND status = 'active'
-        ORDER BY timestamp DESC LIMIT 1
-    """, (str(winner.id), str(loser.id), str(loser.id), str(winner.id)))
-    
-    match_row = c.fetchone()
-
-    if match_row:
-        match_id, d1, d2 = match_row
-        # Mark the match as completed and assign the winner for !meta stats
-        c.execute("UPDATE matches SET winner_id = ?, status = 'completed' WHERE id = ?", 
-                  (str(winner.id), match_id))
-        conn.commit()
-        meta_note = f"✅ Matchup **{d1} vs {d2}** recorded in meta stats."
-    else:
-        meta_note = "⚠️ No active match found in DB. RP adjusted manually (no meta data recorded)."
-
-    # 2. RP CALCULATION (ELO Logic)
-    w_data = get_or_create_user(winner.id, winner.display_name)
-    l_data = get_or_create_user(loser.id, loser.display_name)
-    
-    r1, r2 = w_data[2], l_data[2]
-    # Standard ELO formula: pts = K * (1 - expected_score)
-    pts = round(32 * (1 - (1 / (1 + 10 ** ((r2 - r1) / 400)))))
-    
-    # 3. UPDATE USER STATS
-    w_hist = w_data[6].split(",") if w_data[6] else []
-    l_hist = l_data[6].split(",") if l_data[6] else []
-    
-    w_hist.append(f"W:{loser.display_name}:{pts}")
-    l_hist.append(f"L:{winner.display_name}:{pts}")
-
-    # Winner: +Points, +Wins, +Streak
-    update_user_stats(winner.id, r1 + pts, w_data[3] + 1, w_data[4], w_data[5] + 1, w_hist)
-    # Loser: -Points, +Losses, Reset Streak
-    update_user_stats(loser.id, r2 - pts, l_data[3], l_data[4] + 1, 0, l_hist)
-    
-    conn.close()
-
-    # 4. DISCORD UPDATES (Roles & Leaderboard)
-    await update_player_role(winner, r1 + pts)
-    await update_player_role(loser, r2 - pts)
-    await refresh_leaderboard(ctx.guild)
-    
-    # 5. VERDICT EMBED
-    embed = discord.Embed(title="⚖️ JUDGE VERDICT", color=0xe74c3c)
-    embed.description = f"**{winner.display_name}** has been awarded victory over **{loser.display_name}**."
-    embed.add_field(name="RP SHIFT", value=f"📈 {winner.display_name}: `+{pts}`\n📉 {loser.display_name}: `-{pts}`")
-    embed.set_footer(text=meta_note)
-    
-    await ctx.send(embed=embed)
-    
-    
-    
-
 
 
 # --- Tournament Globals ---
@@ -2067,11 +1882,21 @@ async def settle_slash(interaction: discord.Interaction, winner: discord.Member,
 
     embed = discord.Embed(title="⚖️ JUDGE VERDICT", color=0xe74c3c)
     embed.description = f"**{winner.display_name}** has been awarded victory over **{loser.display_name}**."
-    embed.add_field(name="RP SHIFT", value=f"📈 {winner.display_name}: `+{pts}`\n📉 {loser.display_name}: `-{pts}`")
+    embed.add_field(
+        name="RP SHIFT",
+        value=f"📈 {winner.display_name}: `+{pts}`\n📉 {loser.display_name}: `-{pts}`",
+        inline=False
+    )
     embed.set_footer(text=meta_note)
 
-    await interaction.followup.send(embed=embed, ephemeral=False)
+    # Private confirmation to the mod who ran /settle
+    await interaction.followup.send(
+        f"✅ Settled match: **{winner.display_name}** over **{loser.display_name}**.",
+        ephemeral=True
+    )
 
+    # Public verdict in the channel
+    await interaction.channel.send(embed=embed)
 
 @bot.tree.command(name="clear", description="(Mods) Delete a number of messages in this channel.")
 @app_commands.describe(amount="How many messages to delete (default 100)")
