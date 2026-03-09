@@ -736,7 +736,7 @@ def make_profile_card(
         name_text = t + "…"
     f_label = load_cinzel_font(S(22))
     f_small = load_font("Inter-VariableFont_opsz,wght.ttf", S(15))
-    f_value = load_cinzel_font(S(30))
+    f_value = load_font("Orbitron-VariableFont_wght.ttf", S(30))
     # f_big sized for the NUMBER only, f_rp is ~55% for the "RP" suffix
     f_big = fit_font(draw, f"{pts}", "Orbitron-VariableFont_wght.ttf", max_w=S(340), start_size=S(70), min_size=S(42))
     f_rp = load_font("Orbitron-VariableFont_wght.ttf", int(f_big.size * 0.55))
