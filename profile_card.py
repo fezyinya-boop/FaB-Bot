@@ -552,7 +552,7 @@ def make_profile_card(
 
     rc = rank_color
     WHITE: RGBA = (242, 242, 245, 255)
-    LABEL: RGBA = (255, 200, 90, 255)      # cream labels  # gold labels  # solid white labels
+    LABEL: RGBA = (242, 242, 245, 255)  # white labels      # cream labels  # gold labels  # solid white labels
     PANEL_FILL: RGBA = (8, 8, 12, 255)
     PANEL_LINE: RGBA = (255, 255, 255, 22)
 
